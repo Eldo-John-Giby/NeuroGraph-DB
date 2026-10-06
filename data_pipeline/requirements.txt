@@ -1,0 +1,12 @@
+psycopg2-binary
+pandas
+numpy
+torch
+torch_geometric
+scikit-learn
+pyarrow
+fastparquet
+tqdm
+python-dotenv
+openai
+anthropic\n

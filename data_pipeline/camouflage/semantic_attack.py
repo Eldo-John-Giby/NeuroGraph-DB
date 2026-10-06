@@ -1,0 +1,1 @@
+print("Semantic attack...")\n

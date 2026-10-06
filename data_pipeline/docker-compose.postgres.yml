@@ -1,0 +1,18 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16
+    container_name: neurograph_db
+    environment:
+      POSTGRES_DB: neurograph
+      POSTGRES_USER: neuro
+      POSTGRES_PASSWORD: neuro
+    ports:
+      - "5432:5432"
+    volumes:
+      - neurograph_data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+volumes:
+  neurograph_data:

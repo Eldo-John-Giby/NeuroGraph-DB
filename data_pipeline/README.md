@@ -1,4 +1,5 @@
-# data_pipeline
+# Data Pipeline
 
-**Owner:** Avaneesh
+Ownership: Avaneesh
 
+Run `make all` to build clean pipeline.\n
