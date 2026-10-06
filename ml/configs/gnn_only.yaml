@@ -1,0 +1,21 @@
+model: gnn_only
+meta_dim: 32
+d_model: 128
+dropout: 0.2
+use_sem_in_gnn: false
+relations:
+  - rur
+  - rsr
+  - rtr
+
+lr: 0.001
+weight_decay: 0.0001
+epochs: 60
+patience: 15
+loss_type: focal
+focal_gamma: 2.0
+focal_alpha: 0.75
+use_amp: false
+batch_mode: full
+neighbor_sizes: [10, 5]
+seeds: [42, 43, 44, 45, 46]
