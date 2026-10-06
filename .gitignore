@@ -1,0 +1,13 @@
+artifacts/*
+!artifacts/.gitkeep
+__pycache__/
+*.pyc
+.env
+.venv/
+.ipynb_checkpoints/
+*.pt
+*.npy
+*.parquet
+*.sql.gz
+data_pipeline/raw/
+.DS_Store
