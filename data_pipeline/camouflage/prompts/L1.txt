@@ -1,1 +1,3 @@
-Prompt L1\n
+Paraphrase the following spam review slightly to vary vocabulary and phrasing while keeping the core sentiment and promotional tone.
+Review: {review_text}
+Paraphrased Review:

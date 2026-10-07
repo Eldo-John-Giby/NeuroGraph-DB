@@ -1,1 +1,7 @@
-Prompt L3\n
+Conditioned on the following 3 real benign reviews for product {prod_id}, rewrite the spam review to match the exact vocabulary style, sentence length distribution, and specific entity details of this local product.
+Context Benign Reviews:
+1. {benign_1}
+2. {benign_2}
+3. {benign_3}
+Spam Review to Camouflage: {review_text}
+Style-Matched Camouflaged Review:
