@@ -19,12 +19,15 @@ def make_undirected(edge_index: torch.Tensor) -> torch.Tensor:
     return unique_edges[:, mask]
 
 
-def build_rur_edges(df: pd.DataFrame) -> torch.Tensor:
-    """Build Review-User-Review edges (reviews by same user)."""
+def build_rur_edges(df: pd.DataFrame, max_degree: int = 30) -> torch.Tensor:
+    """Build Review-User-Review edges (reviews by same user) with max degree capping."""
+    rng = np.random.default_rng(42)
     edges = []
     grouped = df.groupby("user_id")["node_idx"].apply(list)
     for nodes in grouped:
         if len(nodes) > 1:
+            if len(nodes) > max_degree:
+                nodes = list(rng.choice(nodes, size=max_degree, replace=False))
             for i in range(len(nodes)):
                 for j in range(i + 1, len(nodes)):
                     edges.append((nodes[i], nodes[j]))
@@ -33,6 +36,7 @@ def build_rur_edges(df: pd.DataFrame) -> torch.Tensor:
     src = [e[0] for e in edges]
     dst = [e[1] for e in edges]
     return make_undirected(torch.tensor([src, dst], dtype=torch.int64))
+
 
 
 def build_rsr_edges(df: pd.DataFrame, max_degree: int = 50) -> torch.Tensor:
