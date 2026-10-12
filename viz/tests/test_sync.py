@@ -19,3 +19,18 @@ def test_sql_syntax():
         content = f.read()
         assert "SELECT" in content
         assert "FROM" in content
+
+def test_explain_demos_syntax():
+    with open('viz/sql/explain_demos.sql', 'r') as f:
+        content = f.read()
+        assert "EXPLAIN" in content
+        assert "reviews" in content
+
+def test_db_dump_exists_and_valid():
+    dump_path = 'artifacts/db_dump/neurograph.sql'
+    if os.path.exists(dump_path):
+        with open(dump_path, 'r', encoding='utf-8') as f:
+            header = f.read(500)
+            assert 'CREATE TABLE' in header
+            assert 'users' in header
+            assert 'reviews' in header

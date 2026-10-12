@@ -35,7 +35,7 @@ camo-topology:
 
 camo-build:
 	python camouflage/build_variants.py
-	pg_dump $$DATABASE_URL | gzip > ../artifacts/db_dump/neurograph.sql.gz
+	python scripts/export_db_dump.py
 
 camo-validate:
 	python camouflage/validate_variants.py

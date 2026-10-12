@@ -90,14 +90,56 @@ def export_run_to_postgres(
     return count
 
 
+def resolve_run_ids(run_id_arg: str | None, artifacts_dir: str) -> list[str]:
+    import glob
+    pred_dir = os.path.join(artifacts_dir, "predictions")
+    if not os.path.exists(pred_dir):
+        return []
+
+    if run_id_arg is None or run_id_arg.lower() == "latest":
+        files = sorted(glob.glob(os.path.join(pred_dir, "neurograph_clean_clean_*.parquet")))
+        if not files:
+            files = sorted(glob.glob(os.path.join(pred_dir, "*.parquet")))
+        if files:
+            return [os.path.splitext(os.path.basename(files[-1]))[0]]
+        return []
+    elif run_id_arg.lower() == "all":
+        # Get latest for each major architecture
+        all_runs = []
+        for arch in ["neurograph_clean_clean", "gnn_only_clean_clean", "text_only_clean_clean"]:
+            files = sorted(glob.glob(os.path.join(pred_dir, f"{arch}_*.parquet")))
+            if files:
+                all_runs.append(os.path.splitext(os.path.basename(files[-1]))[0])
+        return all_runs
+    else:
+        # Strip .parquet if user accidentally passed it
+        clean_id = run_id_arg[:-8] if run_id_arg.endswith(".parquet") else run_id_arg
+        return [clean_id]
+
+
 def main():
     parser = argparse.ArgumentParser(description="Export prediction parquets to PostgreSQL")
-    parser.add_argument("--run-id", type=str, required=True, help="Run ID of predictions to export")
+    parser.add_argument("--run-id", type=str, default="latest", help="Run ID of predictions to export ('latest', 'all', or specific run_id)")
     parser.add_argument("--db-url", type=str, default=None, help="PostgreSQL connection URI")
     parser.add_argument("--artifacts-dir", type=str, default=None)
     args = parser.parse_args()
 
-    export_run_to_postgres(args.run_id, db_url=args.db_url, artifacts_dir=args.artifacts_dir)
+    artifacts_dir = args.artifacts_dir or get_artifacts_dir()
+    run_ids = resolve_run_ids(args.run_id, artifacts_dir)
+
+    if not run_ids:
+        print(f"No prediction parquet files found matching '{args.run_id}'.")
+        return
+
+    total = 0
+    for r_id in run_ids:
+        try:
+            print(f"Exporting predictions for run: {r_id}")
+            total += export_run_to_postgres(r_id, db_url=args.db_url, artifacts_dir=artifacts_dir)
+        except Exception as e:
+            print(f"Export failed for {r_id}: {e}")
+
+    print(f"Export process finished. Total records processed: {total}")
 
 
 if __name__ == "__main__":
