@@ -1,4 +1,4 @@
-# NeuroGraph-DB 🧠
+# NeuroGraph-DB
 
 > **A Dual-Branch Graph Transformer with Hybrid RDBMS–Graph Infrastructure for Camouflaged Review Spam Detection**
 
@@ -52,7 +52,7 @@ The end-to-end pipeline flows from raw YelpChi data ingestion through ML trainin
 
 ```mermaid
 flowchart TD
-    subgraph Ingestion["📥 Data Ingestion (data_pipeline/)"]
+    subgraph Ingestion["Data Ingestion (data_pipeline/)"]
         A["Raw YelpChi CSV\n(yelpchi_reviews.csv)"]
         B["ETL + RoBERTa\nEmbeddings (offline)"]
         C["processed_reviews.parquet\n+ x_sem.pt (768-d)"]
@@ -60,20 +60,20 @@ flowchart TD
         A --> B --> C --> D
     end
 
-    subgraph Storage["🗄️ Hybrid Database Storage"]
+    subgraph Storage["Hybrid Database Storage"]
         E[("PostgreSQL\n(System of Record)\nUsers · Products · Reviews\nFraud Predictions")]
         F[("Neo4j\n(Graph Engine)\n:User · :Review · :Product\n[:WROTE] [:ABOUT]")]
         E -->|"neo4j_sync.py"| F
     end
 
-    subgraph ML["🧠 ML Pipeline (ml/)"]
+    subgraph ML["ML Pipeline (ml/)"]
         G["Multi-Relational\nGraph Builder\n(RUR · RSR · RTR edges)"]
         H["Dual-Branch Model\nRoBERTa + GNN\n+ Cross-Attention"]
         I["Fraud Predictions\n(fraud_score, label)"]
         G --> H --> I
     end
 
-    subgraph Viz["📊 Visualization (viz/)"]
+    subgraph Viz["Visualization (viz/)"]
         J["Streamlit Dashboard\n(Metrics · Robustness\n· Attention · Case Studies)"]
         K["Cypher Queries\n(Fraud Ring Detection)"]
     end
@@ -145,7 +145,7 @@ flowchart LR
 | `text_only` | RoBERTa semantics only | 2-layer MLP |
 | `gnn_only` | Behavioral metadata + GNN | Per-relation GraphSAGE + softmax weighted sum |
 | `concat` | RoBERTa + GNN | Naive concatenation → MLP |
-| `neurograph` ⭐ | RoBERTa + GNN | Multi-Head Cross-Attention (text as Query) |
+| `neurograph` (Proposed) | RoBERTa + GNN | Multi-Head Cross-Attention (text as Query) |
 
 ---
 
@@ -265,24 +265,24 @@ NeuroGraph-DB evaluates detection robustness against two classes of adversarial 
 
 ```mermaid
 flowchart TD
-    subgraph Semantic["🧠 Semantic Camouflage (LLM Text Rewriting)"]
+    subgraph Semantic["Semantic Camouflage (LLM Text Rewriting)"]
         S1["sem_L1: Light Paraphrase\n(synonym substitution)"]
         S2["sem_L2: Full Rewrite\n(structure-preserving LLM)"]
         S3["sem_L3: Style-Conditioned\n(tone + vocabulary shift)"]
     end
 
-    subgraph Topology["🕸️ Topology Camouflage (Graph Structure Injection)"]
+    subgraph Topology["Topology Camouflage (Graph Structure Injection)"]
         T1["topo_p10: 10% heterophilic\nedge dilution"]
         T2["topo_p30: 30% heterophilic\nedge dilution"]
         T3["topo_p50: 50% heterophilic\nedge dilution"]
         T4["topo_hub_p30: 30% edges\ntargeting high-degree hub nodes"]
     end
 
-    subgraph Combined["⚔️ Combined Attack"]
+    subgraph Combined["Combined Attack"]
         C1["both_L3_p30:\nsem_L3 + topo_p30"]
     end
 
-    subgraph Protocols["📋 Evaluation Protocols"]
+    subgraph Protocols["Evaluation Protocols"]
         PA["Protocol A (Standard)\nTrain: clean → Eval: attacked\nMeasures: detection degradation"]
         PB["Protocol B (Adversarial Training)\nTrain: attacked → Eval: attacked + clean\nMeasures: robustness recovery"]
     end
@@ -293,8 +293,8 @@ flowchart TD
 ```
 
 **Threat Model:**
-- ✅ **In Scope:** LLM text rewriting (semantic camouflage), injecting cross-links to benign products (topology camouflage)
-- ❌ **Out of Scope:** Creating new accounts, label flipping, white-box gradient attacks
+- **In Scope:** LLM text rewriting (semantic camouflage), injecting cross-links to benign products (topology camouflage)
+- **Out of Scope:** Creating new accounts, label flipping, white-box gradient attacks
 
 ---
 
@@ -306,7 +306,7 @@ flowchart TD
 |---|---|---|---|
 | `gnn_only` | 0.9256 ± 0.0023 | 0.7084 ± 0.0130 | 0.7830 ± 0.0056 |
 | `concat` | 0.9728 ± 0.0031 | 0.9191 ± 0.0080 | 0.9156 ± 0.0062 |
-| `neurograph` ⭐ | **0.9943 ± 0.0014** | **0.9754 ± 0.0111** | **0.9366 ± 0.0436** |
+| `neurograph` (Proposed) | **0.9943 ± 0.0014** | **0.9754 ± 0.0111** | **0.9366 ± 0.0436** |
 | `text_only` | 1.0000 ± 0.0000 | 1.0000 ± 0.0000 | 0.9993 ± 0.0012 |
 
 > [!NOTE]
@@ -318,7 +318,7 @@ flowchart TD
 |---|---|---|---|
 | `gnn_only` | 0.7084 | 0.3909 | 55.2% |
 | `concat` | 0.9191 | 0.6952 | 75.6% |
-| `neurograph` ⭐ | 0.9754 | **0.9525** | **97.7%** |
+| `neurograph` (Proposed) | 0.9754 | **0.9525** | **97.7%** |
 
 ### Adversarial Training Recovery (Protocol B — `neurograph`)
 
@@ -386,7 +386,7 @@ NeuroGraph-DB/
 │
 ├── ml/                         # (Owner: Eldo)
 │   ├── models/
-│   │   ├── neurograph.py               # ⭐ Main proposed model (cross-attention)
+│   │   ├── neurograph.py               # Proposed main model (cross-attention)
 │   │   ├── gnn_only.py                 # Baseline B1: Relation-aware GNN
 │   │   ├── concat_fusion.py            # Baseline B2: Naive concatenation
 │   │   └── text_only.py                # Baseline A: Text-only MLP
@@ -433,7 +433,7 @@ NeuroGraph-DB/
 ├── review_variants/            # Camouflage variant review CSVs
 │   └── semantic_1.csv
 │
-├── artifacts/                  # ⚠️ Cross-module contracts (never commit)
+├── artifacts/                  # Cross-module contracts (never commit)
 │   ├── graph/                  # PyTorch Geometric graph objects (.pt)
 │   ├── predictions/            # Per-run prediction parquets
 │   ├── results/                # Metrics JSONs + robustness_summary.csv
@@ -558,7 +558,7 @@ cd viz && pytest tests/ -v
 
 | Script / File | Purpose |
 |---|---|
-| `models/neurograph.py` | ⭐ Proposed model: RoBERTa Query × GNN Keys/Values → Cross-Attention |
+| `models/neurograph.py` | Proposed model: RoBERTa Query × GNN Keys/Values → Cross-Attention |
 | `models/gnn_only.py` | Relation-Aware GNN with softmax-weighted multi-relational fusion |
 | `train.py` | Training loop with Focal loss, AdamW, early stopping on Val PR-AUC |
 | `robustness.py` | Protocol A & B evaluation across all 9 attack variants × 5 seeds |
