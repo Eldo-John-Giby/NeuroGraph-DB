@@ -22,7 +22,7 @@
 5. [Graph Schema (Neo4j)](#graph-schema-neo4j)
 6. [Camouflage Attack Pipeline](#camouflage-attack-pipeline)
 7. [Benchmark Results](#benchmark-results)
-8. [Dataset Statistics](#dataset-statistics)
+8. [Dataset Overview & Statistics](#dataset-overview--statistics)
 9. [Project Structure](#project-structure)
 10. [Quick Start](#quick-start)
 11. [Module Breakdown](#module-breakdown)
@@ -330,35 +330,83 @@ flowchart TD
 
 ---
 
-## Dataset Statistics
+## Dataset Overview & Statistics
 
-**YelpChi** — 5,000 review subgraph for academic evaluation:
+The benchmark is evaluated on the **YelpChi** spam review dataset (5,000 review academic subgraph), capturing restaurant and hotel reviews in the Chicago area with ground-truth filtered labels assigned by Yelp's production fraud detection algorithm.
+
+### Schema & Column Definitions
+
+| Column | Type | Description | Example |
+|---|---|---|---|
+| `review_id` | `VARCHAR` | Unique review identifier | `"rev_000000"` |
+| `user_id` | `VARCHAR` | Reviewer identity (Foreign Key to users) | `"u_00853"` |
+| `prod_id` | `VARCHAR` | Product / Restaurant identity (Foreign Key to products) | `"p_0063"` |
+| `rating` | `INTEGER` | Star rating (1 to 5) | `5` |
+| `review_date` | `DATE` | Publication date | `"2019-03-14"` |
+| `review_text` | `TEXT` | Raw review text content | `"The manager greeted us personally and the dessert menu was phenomenal..."` |
+| `label` | `INTEGER` | Ground-truth label (`0` = Benign / Recommended, `1` = Spam / Filtered) | `0` or `1` |
+| `node_idx` | `INTEGER` | Graph node index (0 to 4,999) matching PyTorch Geometric tensors | `0` |
+| `split` | `VARCHAR` | Data split partition (`train`, `val`, `test`) | `"train"` |
+
+### Sample Records
+
+#### Benign Review Sample (`label = 0`)
+```json
+{
+  "review_id": "rev_000000",
+  "user_id": "u_00853",
+  "prod_id": "p_0063",
+  "rating": 5,
+  "review_date": "2019-03-14",
+  "review_text": "The manager greeted us personally and the dessert menu was phenomenal. Order confirmed for p_0063.",
+  "label": 0,
+  "node_idx": 0,
+  "split": "train"
+}
+```
+
+#### Spam / Fraudulent Review Sample (`label = 1`)
+```json
+{
+  "review_id": "rev_000013",
+  "user_id": "u_00853",
+  "prod_id": "p_0063",
+  "rating": 5,
+  "review_date": "2021-02-18",
+  "review_text": "Greatest deals anywhere in town call 555-1234 for special promotion! Review ID #13 - p_0063.",
+  "label": 1,
+  "node_idx": 13,
+  "split": "train"
+}
+```
+
+### Dataset Distribution & Multi-Relational Topology
 
 | Metric | Value |
 |---|---|
-| Total Reviews | 5,000 |
-| Benign Reviews (y=0) | 4,250 (85.0%) |
-| Spam Reviews (y=1) | 750 (15.0%) |
+| Total Reviews (Nodes) | 5,000 |
+| Benign Reviews (y = 0) | 4,250 (85.0%) |
+| Spam Reviews (y = 1) | 750 (15.0%) |
 | Unique Users | ~2,000 |
 | Unique Products | ~500 |
-| Semantic Feature Dim (x_sem) | ℝ⁷⁶⁸ (frozen RoBERTa-base) |
-| Behavioral Feature Dim (x_meta) | ℝ³² |
+| Semantic Feature Dim (`x_sem`) | R^768 (frozen RoBERTa-base) |
+| Behavioral Feature Dim (`x_meta`) | R^32 (normalized rating, temporal difference, frequency) |
 
-### Multi-Relational Graph Topology
+#### Graph Relations (Heterogeneous Edges)
 
-| Relation | Semantics | Avg. Degree | Structure |
+| Relation | Semantics | Avg. Degree | Edge Structure |
 |---|---|---|---|
-| **R_RUR** | Review–User–Review (same reviewer) | 4.2 | Sparse, homophilic |
-| **R_RSR** | Review–Same Rating–Review (same product + rating) | 8.6 | Dense clusters |
-| **R_RTR** | Review–Temporal–Review (same product ≤ 30 days) | 5.1 | Temporal bursts |
+| **R_RUR** | Review–User–Review (written by same reviewer) | 4.2 | Sparse, homophilic |
+| **R_RSR** | Review–Same Rating–Review (same product & rating) | 8.6 | Dense review clusters |
+| **R_RTR** | Review–Temporal–Review (same product within 30 days) | 5.1 | Temporal review bursts |
 
-### Train / Val / Test Split
+#### Split Partitioning
 
-| Split | Nodes | Benign | Spam |
-|---|---|---|---|
-| Train | 3,000 | 2,550 | 450 |
-| Val | 1,000 | 850 | 150 |
-| Test | 1,000 | 850 | 150 |
+| Split | Node Count | Benign Reviews | Spam Reviews | Spam Ratio |
+|---|---|---|---|---|
+| Train | 3,000 | 2,550 | 450 | 15.0% |
+| Val | 1,000 | 850 | 150 | 15.0% |
+| Test | 1,000 | 850 | 150 | 15.0% |
 
 ---
 
