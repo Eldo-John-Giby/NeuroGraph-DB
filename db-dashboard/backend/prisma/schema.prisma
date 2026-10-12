@@ -1,0 +1,104 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum Role {
+  ADMIN
+  RESEARCHER
+}
+
+model AppUser {
+  id        Int        @id @default(autoincrement())
+  username  String     @unique
+  email     String     @unique
+  password  String
+  role      Role       @default(RESEARCHER)
+  createdAt DateTime   @default(now())
+  auditLogs AuditLog[]
+}
+
+model YelpReviewer {
+  id      Int      @id @default(autoincrement())
+  yelpId  String   @unique
+  name    String?
+  reviews Review[]
+}
+
+model Product {
+  id        Int      @id @default(autoincrement())
+  productId String   @unique
+  name      String?
+  reviews   Review[]
+}
+
+model Review {
+  id          Int               @id @default(autoincrement())
+  reviewId    String            @unique
+  text        String?
+  rating      Float?
+  date        DateTime?
+  reviewerId  Int
+  reviewer    YelpReviewer      @relation(fields: [reviewerId], references: [id])
+  productId   Int
+  product     Product           @relation(fields: [productId], references: [id])
+  predictions FraudPrediction[]
+}
+
+model GraphVariant {
+  id          Int             @id @default(autoincrement())
+  name        String          @unique
+  description String?
+  runs        ExperimentRun[]
+}
+
+model MLModel {
+  id          Int             @id @default(autoincrement())
+  name        String          @unique
+  description String?
+  runs        ExperimentRun[]
+}
+
+model ExperimentRun {
+  id             Int               @id @default(autoincrement())
+  seed           Int
+  timeSec        Float
+  f1Macro        Float
+  precision      Float
+  recall         Float
+  auc            Float
+  graphVariantId Int
+  graphVariant   GraphVariant      @relation(fields: [graphVariantId], references: [id])
+  mlModelId      Int
+  mlModel        MLModel           @relation(fields: [mlModelId], references: [id])
+  predictions    FraudPrediction[]
+
+  @@unique([graphVariantId, mlModelId, seed])
+}
+
+model FraudPrediction {
+  id              Int           @id @default(autoincrement())
+  isFraud         Boolean
+  confidence      Float?
+  reviewId        Int
+  review          Review        @relation(fields: [reviewId], references: [id])
+  experimentRunId Int
+  experimentRun   ExperimentRun @relation(fields: [experimentRunId], references: [id])
+}
+
+// Bonus requirement: AuditLog table (Industry Best Practice)
+model AuditLog {
+  id        Int      @id @default(autoincrement())
+  userId    Int?
+  user      AppUser? @relation(fields: [userId], references: [id], onDelete: SetNull)
+  action    String
+  method    String
+  endpoint  String
+  ipAddress String?
+  details   String?
+  timestamp DateTime @default(now())
+}
