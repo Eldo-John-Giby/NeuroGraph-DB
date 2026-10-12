@@ -11,3 +11,6 @@ __pycache__/
 *.sql.gz
 data_pipeline/raw/
 .DS_Store
+node_modules/
+db-dashboard/backend/node_modules/
+db-dashboard/frontend/node_modules/
