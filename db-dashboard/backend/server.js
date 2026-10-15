@@ -1,3 +1,6 @@
+const path = require('path');
+require('dotenv').config({ path: path.resolve(__dirname, '.env'), quiet: true });
+
 const express = require('express');
 const cors = require('cors');
 const bcrypt = require('bcryptjs');
@@ -122,15 +125,63 @@ app.get('/api/auth/me', authenticateToken, async (req, res) => {
 // -----------------------------------------------------------------------------
 // Advanced SQL Endpoints (Raw SQL View, Stored Procedure, Trigger)
 // -----------------------------------------------------------------------------
+// Global BigInt JSON serialization support
+BigInt.prototype.toJSON = function () {
+  return Number(this);
+};
+
 // GET /api/advanced/view (Raw SQL View: v_model_performance_summary)
+// Auto-creates the view if it does not exist, then queries it.
 app.get('/api/advanced/view', authenticateToken, async (req, res) => {
+  const CREATE_VIEW_SQL = `
+    CREATE OR REPLACE VIEW v_model_performance_summary AS
+    SELECT
+      m.name AS model_name,
+      v.name AS variant_name,
+      CAST(COUNT(r.id) AS INTEGER) AS total_runs,
+      ROUND(AVG(r."f1Macro")::numeric, 4) AS avg_f1_macro,
+      ROUND(AVG(r.auc)::numeric, 4) AS avg_auc,
+      ROUND(AVG(r.precision)::numeric, 4) AS avg_precision,
+      ROUND(AVG(r.recall)::numeric, 4) AS avg_recall,
+      ROUND(AVG(r."timeSec")::numeric, 2) AS avg_time_sec,
+      MAX(r.auc) AS peak_auc,
+      MAX(r."f1Macro") AS peak_f1
+    FROM "ExperimentRun" r
+    JOIN "MLModel" m ON r."mlModelId" = m.id
+    JOIN "GraphVariant" v ON r."graphVariantId" = v.id
+    GROUP BY m.name, v.name
+    ORDER BY avg_auc DESC;
+  `;
+
   try {
-    const summary = await prisma.$queryRawUnsafe(`
-      SELECT * FROM v_model_performance_summary;
-    `);
-    res.json(summary);
+    let summary;
+    try {
+      summary = await prisma.$queryRawUnsafe(`SELECT * FROM v_model_performance_summary;`);
+    } catch (viewErr) {
+      // View does not exist — create it and retry
+      console.log('View v_model_performance_summary not found, creating it now...');
+      await prisma.$executeRawUnsafe(CREATE_VIEW_SQL);
+      summary = await prisma.$queryRawUnsafe(`SELECT * FROM v_model_performance_summary;`);
+    }
+
+    // Format any BigInt or Decimal values safely for JSON response
+    const formattedSummary = (summary || []).map((row) => {
+      const clean = {};
+      for (const [key, val] of Object.entries(row)) {
+        if (typeof val === 'bigint') {
+          clean[key] = Number(val);
+        } else if (val !== null && typeof val === 'object' && typeof val.toNumber === 'function') {
+          clean[key] = val.toNumber();
+        } else {
+          clean[key] = val;
+        }
+      }
+      return clean;
+    });
+
+    res.json(formattedSummary);
   } catch (err) {
-    console.error('Error querying view:', err);
+    console.error('Error querying/creating view:', err);
     res.status(500).json({ error: 'Failed to query SQL view: ' + err.message });
   }
 });
@@ -360,11 +411,66 @@ app.get('/api/audit-logs', authenticateToken, requireRole('ADMIN'), async (req, 
 });
 
 // -----------------------------------------------------------------------------
-// Server Initialization
+// Server Initialization & Database Verification
 // -----------------------------------------------------------------------------
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
+
+const server = app.listen(PORT, async () => {
   console.log(`Server is running on port ${PORT}`);
+
+  // Safe asynchronous database & SQL view verification
+  try {
+    const CREATE_VIEW_SQL = `
+      CREATE OR REPLACE VIEW v_model_performance_summary AS
+      SELECT
+        m.name AS model_name,
+        v.name AS variant_name,
+        CAST(COUNT(r.id) AS INTEGER) AS total_runs,
+        ROUND(AVG(r."f1Macro")::numeric, 4) AS avg_f1_macro,
+        ROUND(AVG(r.auc)::numeric, 4) AS avg_auc,
+        ROUND(AVG(r.precision)::numeric, 4) AS avg_precision,
+        ROUND(AVG(r.recall)::numeric, 4) AS avg_recall,
+        ROUND(AVG(r."timeSec")::numeric, 2) AS avg_time_sec,
+        MAX(r.auc) AS peak_auc,
+        MAX(r."f1Macro") AS peak_f1
+      FROM "ExperimentRun" r
+      JOIN "MLModel" m ON r."mlModelId" = m.id
+      JOIN "GraphVariant" v ON r."graphVariantId" = v.id
+      GROUP BY m.name, v.name
+      ORDER BY avg_auc DESC;
+    `;
+    await prisma.$executeRawUnsafe(CREATE_VIEW_SQL);
+    console.log('✓ PostgreSQL SQL View (v_model_performance_summary) ready');
+  } catch (initErr) {
+    console.warn('Startup database/view initialization notice:', initErr.message);
+  }
+});
+
+// Explicit error handler for port collisions (EADDRINUSE)
+server.on('error', (err) => {
+  if (err.code === 'EADDRINUSE') {
+    console.error(`\n❌ FATAL: Port ${PORT} is already occupied by another process.`);
+    console.error(`Run "lsof -i :${PORT}" to find the process, or "kill -9 <PID>" to free it.\n`);
+  } else {
+    console.error('\n❌ Server error:', err);
+  }
+  process.exit(1);
+});
+
+// Graceful shutdown
+process.on('SIGINT', async () => {
+  console.log('\nGracefully shutting down server...');
+  server.close(async () => {
+    await prisma.$disconnect();
+    process.exit(0);
+  });
+});
+
+process.on('SIGTERM', async () => {
+  server.close(async () => {
+    await prisma.$disconnect();
+    process.exit(0);
+  });
 });
 
 module.exports = app;

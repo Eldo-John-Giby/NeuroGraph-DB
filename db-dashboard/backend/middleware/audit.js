@@ -1,3 +1,7 @@
+if (!process.env.DATABASE_URL) {
+  require('dotenv').config({ path: require('path').resolve(__dirname, '../.env'), quiet: true });
+}
+
 // Express middleware for logging POST/PUT/DELETE requests into the AuditLog table
 function createAuditLogger(prisma) {
   return async (req, res, next) => {
