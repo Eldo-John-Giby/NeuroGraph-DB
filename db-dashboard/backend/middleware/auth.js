@@ -13,7 +13,7 @@ function authenticateToken(req, res, next) {
   const token = authHeader && authHeader.split(' ')[1]; // Bearer <token>
 
   if (!token) {
-    if (req.method === 'GET' && !req.path.includes('audit-logs')) {
+    if (['GET', 'HEAD'].includes(req.method) && !req.path.includes('audit-logs')) {
       req.user = { id: null, username: 'guest', role: 'RESEARCHER' };
       return next();
     }
@@ -22,7 +22,7 @@ function authenticateToken(req, res, next) {
 
   jwt.verify(token, JWT_SECRET, (err, user) => {
     if (err) {
-      if (req.method === 'GET' && !req.path.includes('audit-logs')) {
+      if (['GET', 'HEAD'].includes(req.method) && !req.path.includes('audit-logs')) {
         req.user = { id: null, username: 'guest', role: 'RESEARCHER' };
         return next();
       }
