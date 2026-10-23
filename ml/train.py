@@ -297,6 +297,14 @@ def train_single_run(
         pred_path = os.path.join(artifacts_dir, "predictions", f"{run_id}.parquet")
         df_pred.to_parquet(pred_path, index=False)
 
+        # Save trained model checkpoint (.pt) for inference and deployment
+        models_dir = os.path.join(artifacts_dir, 'models')
+        os.makedirs(models_dir, exist_ok=True)
+        ckpt_path = os.path.join(models_dir, f'{run_id}.pt')
+        torch.save(model.state_dict(), ckpt_path)
+        canonical_ckpt_path = os.path.join(models_dir, f'{model_name}_best.pt')
+        torch.save(model.state_dict(), canonical_ckpt_path)
+
     return {
         "metrics": final_metrics,
         "model": model,
