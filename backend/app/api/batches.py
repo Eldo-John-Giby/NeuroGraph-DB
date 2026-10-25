@@ -3,7 +3,7 @@ import hashlib
 import uuid
 from datetime import datetime, timedelta, timezone
 
-from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, File, Form, Header, HTTPException, UploadFile
 from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
@@ -128,9 +128,26 @@ async def create_batch_analysis(
     source_system: str = Form(min_length=1, max_length=100),
     historic_graph_snapshot_id: int | None = Form(default=None, gt=0),
     model_version_id: int | None = Form(default=None, gt=0),
+    idempotency_key: str | None = Header(default=None, alias="Idempotency-Key"),
     user: User = Depends(current_user),
     db: Session = Depends(get_db),
 ):
+    if idempotency_key:
+        existing_run = db.scalar(
+            select(InferenceRun).where(
+                InferenceRun.requested_by_user_id == user.user_id,
+                InferenceRun.idempotency_key == idempotency_key,
+            )
+        )
+        if existing_run is not None:
+            existing_batch = db.scalar(
+                select(BatchAnalysis).where(
+                    BatchAnalysis.inference_run_id == existing_run.inference_run_id
+                )
+            )
+            if existing_batch is not None:
+                return _batch_payload(existing_batch, db=db)
+
     content = await file.read(MAX_CSV_BYTES + 1)
     await file.close()
     rows = parse_review_csv(content)
@@ -302,6 +319,7 @@ async def create_batch_analysis(
                     provenance="real",
                     graph_snapshot_id=historic_graph_snapshot_id,
                     requested_by_user_id=user.user_id,
+                    idempotency_key=idempotency_key,
                     threshold=candidate_model.recommended_threshold,
                     status="queued",
                     requested_count=accepted_count,

@@ -403,7 +403,7 @@ class InductiveYelpChiRuntime:
                 time_diff = abs(u_rev.reviewed_at - sorted_historic[h_idx].reviewed_at)
                 if time_diff <= timedelta(days=30):
                     rtr_matches.append((time_diff, h_idx))
-            rtr_matches.sort(key=lambda item: item[0])
+            rtr_matches.sort(key=lambda item: (item[0], sorted_historic[item[1]].review_id))
             selected_rtr = [idx for _, idx in rtr_matches[:max_neighbors]]
             rtr_src.extend(selected_rtr)
             rtr_tgt.extend([target_node] * len(selected_rtr))
