@@ -1,44 +1,77 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { apiRequest, isApiError } from '../lib/api';
 
 export interface User {
-  id: number;
-  username: string;
+  user_id: number;
+  username: string | null;
   email: string;
-  role: 'ADMIN' | 'RESEARCHER';
+  role_key: 'ADMIN' | 'RESEARCHER';
+  is_active: boolean;
 }
 
 interface AuthContextType {
   user: User | null;
-  token: string | null;
-  login: (token: string, user: User) => void;
+  login: (accessToken: string, user: User) => void;
   logout: () => void;
   isLoading: boolean;
+  isAdmin: boolean;
 }
 
 const AuthContext = createContext<AuthContextType>({
   user: null,
-  token: null,
   login: () => {},
   logout: () => {},
   isLoading: true,
+  isAdmin: false,
 });
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
-  const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+
+  const isAdmin = user?.role_key === 'ADMIN';
+
+  const login = useCallback((accessToken: string, newUser: User) => {
+    localStorage.setItem('neuro_token', accessToken);
+    localStorage.setItem('neuro_user', JSON.stringify(newUser));
+    setUser(newUser);
+  }, []);
+
+  const logout = useCallback(async () => {
+    try {
+      await apiRequest('/api/v1/auth/logout', { method: 'POST' });
+    } catch {
+      // Ignore errors during logout
+    }
+    localStorage.removeItem('neuro_token');
+    localStorage.removeItem('neuro_user');
+    setUser(null);
+  }, []);
 
   useEffect(() => {
     const savedToken = localStorage.getItem('neuro_token');
     const savedUser = localStorage.getItem('neuro_user');
     if (savedToken && savedUser) {
       try {
-        setToken(savedToken);
-        setUser(JSON.parse(savedUser));
-      } catch (e) {
-        console.error('Failed to parse saved user', e);
+        const parsed = JSON.parse(savedUser) as User;
+        setUser(parsed);
+        // Validate the session is still alive by calling /auth/me
+        apiRequest<User>('/api/v1/auth/me')
+          .then((freshUser) => {
+            setUser(freshUser);
+            localStorage.setItem('neuro_user', JSON.stringify(freshUser));
+          })
+          .catch(() => {
+            // Session is invalid, clear everything
+            localStorage.removeItem('neuro_token');
+            localStorage.removeItem('neuro_user');
+            setUser(null);
+          })
+          .finally(() => setIsLoading(false));
+        return;
+      } catch {
         localStorage.removeItem('neuro_token');
         localStorage.removeItem('neuro_user');
       }
@@ -46,22 +79,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setIsLoading(false);
   }, []);
 
-  const login = (newToken: string, newUser: User) => {
-    setToken(newToken);
-    setUser(newUser);
-    localStorage.setItem('neuro_token', newToken);
-    localStorage.setItem('neuro_user', JSON.stringify(newUser));
-  };
-
-  const logout = () => {
-    setToken(null);
-    setUser(null);
-    localStorage.removeItem('neuro_token');
-    localStorage.removeItem('neuro_user');
-  };
-
   return (
-    <AuthContext.Provider value={{ user, token, login, logout, isLoading }}>
+    <AuthContext.Provider value={{ user, login, logout, isLoading, isAdmin }}>
       {children}
     </AuthContext.Provider>
   );
