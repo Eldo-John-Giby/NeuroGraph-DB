@@ -121,6 +121,49 @@ def set_batch_context_permission(
         "context_scope_key": snapshot.context_scope_key,
     }
 
+def _snapshot_payload(snapshot: GraphSnapshot) -> dict:
+    return {
+        "graph_snapshot_id": snapshot.graph_snapshot_id,
+        "snapshot_key": snapshot.snapshot_key,
+        "dataset_name": snapshot.dataset_name,
+        "dataset_sha256": snapshot.dataset_sha256,
+        "artifact_uri": snapshot.artifact_uri,
+        "artifact_sha256": snapshot.artifact_sha256,
+        "graph_builder_version": snapshot.graph_builder_version,
+        "relation_schema_version": snapshot.relation_schema_version,
+        "split_protocol_key": snapshot.split_protocol_key,
+        "node_count": snapshot.node_count,
+        "edge_counts": snapshot.edge_counts,
+        "storage_status": snapshot.storage_status,
+        "batch_context_permitted": snapshot.batch_context_permitted,
+        "context_scope_key": snapshot.context_scope_key,
+        "provenance": snapshot.provenance,
+        "created_at": snapshot.created_at,
+    }
+
+
+@router.get("/graph-snapshots")
+def list_graph_snapshots(
+    user: User = Depends(current_user),
+    db: Session = Depends(get_db),
+):
+    snapshots = db.scalars(
+        select(GraphSnapshot).order_by(GraphSnapshot.graph_snapshot_id.desc())
+    ).all()
+    return {"items": [_snapshot_payload(s) for s in snapshots], "total": len(snapshots)}
+
+
+@router.get("/graph-snapshots/{snapshot_id}")
+def get_graph_snapshot(
+    snapshot_id: int,
+    user: User = Depends(current_user),
+    db: Session = Depends(get_db),
+):
+    snapshot = db.get(GraphSnapshot, snapshot_id)
+    if snapshot is None:
+        raise HTTPException(status_code=404, detail={"code": "snapshot_not_found", "message": "Graph snapshot was not found."})
+    return _snapshot_payload(snapshot)
+
 
 @router.post("/batch-analyses", status_code=201)
 async def create_batch_analysis(
@@ -346,6 +389,29 @@ async def create_batch_analysis(
         db.rollback()
         raise HTTPException(status_code=409, detail={"code": "batch_import_conflict", "message": "The CSV conflicts with existing source records; no batch rows were committed."})
     return _batch_payload(batch, db=db)
+
+
+@router.get("/batch-analyses")
+def list_batch_analyses(
+    limit: int = 25,
+    offset: int = 0,
+    user: User = Depends(current_user),
+    db: Session = Depends(get_db),
+):
+    if not 1 <= limit <= 100 or offset < 0:
+        raise HTTPException(status_code=422, detail={"code": "invalid_pagination", "message": "limit must be 1..100 and offset nonnegative."})
+    total = db.scalar(select(func.count()).select_from(BatchAnalysis)) or 0
+    batches = db.scalars(
+        select(BatchAnalysis)
+        .order_by(BatchAnalysis.batch_analysis_id.desc())
+        .offset(offset).limit(limit)
+    ).all()
+    return {
+        "items": [_batch_payload(b, db=db) for b in batches],
+        "total": total,
+        "limit": limit,
+        "offset": offset,
+    }
 
 
 @router.get("/batch-analyses/{batch_analysis_id}")
