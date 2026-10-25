@@ -7,7 +7,7 @@ export interface User {
   user_id: number;
   username: string | null;
   email: string;
-  role_key: 'ADMIN' | 'RESEARCHER';
+  role_key: 'ADMIN' | 'RESEARCHER' | string;
   is_active: boolean;
 }
 
@@ -18,6 +18,10 @@ interface AuthContextType {
   isLoading: boolean;
   isAdmin: boolean;
 }
+
+export const isUserAdmin = (u: User | null | undefined): boolean => {
+  return typeof u?.role_key === 'string' && u.role_key.trim().toUpperCase() === 'ADMIN';
+};
 
 const AuthContext = createContext<AuthContextType>({
   user: null,
@@ -31,12 +35,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  const isAdmin = user?.role_key === 'ADMIN';
+  // Administration access requires verified ADMIN role and completed auth loading
+  const isAdmin = !isLoading && Boolean(user?.role_key?.trim().toUpperCase() === 'ADMIN');
 
   const login = useCallback((accessToken: string, newUser: User) => {
     localStorage.setItem('neuro_token', accessToken);
     localStorage.setItem('neuro_user', JSON.stringify(newUser));
     setUser(newUser);
+    setIsLoading(false);
   }, []);
 
   const logout = useCallback(async () => {
@@ -48,6 +54,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     localStorage.removeItem('neuro_token');
     localStorage.removeItem('neuro_user');
     setUser(null);
+    setIsLoading(false);
   }, []);
 
   useEffect(() => {

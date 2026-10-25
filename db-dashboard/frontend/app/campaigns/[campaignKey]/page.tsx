@@ -15,18 +15,22 @@ type GraphNode = { labels: string[]; key: string; provenance: string; name?: str
 type GraphRel = { type: string; source_key: string; target_key: string; provenance: string };
 type Graph = { provenance: string; source: string; model_inference_used: boolean; nodes: GraphNode[]; relationships: GraphRel[] };
 
-const lane = (n: GraphNode) => n.labels.find(x => ['Campaign', 'Reviewer', 'Review', 'Restaurant'].includes(x)) || 'Other';
+const lane = (n: GraphNode) => {
+  const matched = n.labels.find(x => ['Campaign', 'Reviewer', 'Review', 'Restaurant', 'Product'].includes(x));
+  if (matched === 'Restaurant') return 'Product';
+  return matched || 'Other';
+};
 const displayNode = (n: GraphNode) => n.name || n.campaign_name || n.external_reviewer_key || n.source_review_key || n.labels[0] || 'Node';
 
 function CampaignGraph({ graph }: { graph: Graph }) {
-  const lanes = ['Campaign', 'Reviewer', 'Review', 'Restaurant'];
+  const lanes = ['Campaign', 'Reviewer', 'Review', 'Product'];
   const grouped = lanes.map(name => graph.nodes.filter(n => lane(n) === name));
   const rowGap = 50, height = Math.max(450, ...grouped.map(x => x.length * rowGap + 100));
   const xs = [110, 350, 600, 850];
   const positions = new Map<string, { x: number; y: number }>();
   grouped.forEach((nodes, i) => nodes.forEach((node, j) => positions.set(node.key, { x: xs[i], y: 58 + j * rowGap })));
   const kind = new Map(graph.nodes.map(n => [n.key, lane(n)]));
-  const colors: Record<string, string> = { Campaign: '#d97706', Reviewer: '#0f766e', Review: '#64748b', Restaurant: '#164e63' };
+  const colors: Record<string, string> = { Campaign: '#d97706', Reviewer: '#0f766e', Review: '#64748b', Product: '#164e63', Restaurant: '#164e63' };
   return <div className="graph-scroll"><svg viewBox={`0 0 960 ${height}`} className="campaign-graph" role="img" aria-label="Synthetic campaign relationship graph">
     {graph.relationships.map((r, i) => { const a = positions.get(r.source_key), b = positions.get(r.target_key); if (!a || !b) return null; return <line key={`${r.type}-${i}`} x1={a.x + 45} y1={a.y} x2={b.x - 45} y2={b.y} className="graph-edge"><title>{r.type}</title></line>; })}
     {lanes.map((name, i) => <text key={name} x={xs[i]} y="24" textAnchor="middle" className="graph-lane">{name}</text>)}
@@ -64,7 +68,7 @@ export default function CampaignInvestigationPage() {
   }))), [members]);
   if (authLoading || !user) return <div className="session-loading">Loading workspace…</div>;
   return <AppShell>
-    <header className="page-heading"><div><Link className="back-link inline-flex items-center gap-1" href="/"><ArrowLeft className="h-3 w-3" /> Risk overview</Link><p className="eyebrow">Campaign investigation</p><h1>{summary?.campaign_name || 'Campaign evidence'}</h1><p className="page-subtitle">{summary?.product.name || 'Restaurant details load from the campaign API'}</p></div><button className="button-secondary" onClick={refresh} disabled={loading}>Refresh evidence</button></header>
+    <header className="page-heading"><div><Link className="back-link inline-flex items-center gap-1" href="/"><ArrowLeft className="h-3 w-3" /> Risk overview</Link><p className="eyebrow">Campaign investigation</p><h1>{summary?.campaign_name || 'Campaign evidence'}</h1><p className="page-subtitle">{summary?.product.name || 'Product details load from the campaign API'}</p></div><button className="button-secondary" onClick={refresh} disabled={loading}>Refresh evidence</button></header>
     <div className="provenance-banner"><span className="provenance-mark" aria-hidden="true" />SYNTHETIC DEMO DATA <span>— not model output</span></div>
     {loading && <div className="notice-card">Loading campaign records and graph projection…</div>}
     {!loading && error && <div className="notice-card notice-error"><strong>Campaign evidence unavailable</strong><p>{error}</p><button className="text-action" onClick={refresh}>Try again</button></div>}

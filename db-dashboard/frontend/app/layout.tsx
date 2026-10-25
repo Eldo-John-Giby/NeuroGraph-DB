@@ -4,7 +4,7 @@ import { AuthProvider } from "./context/AuthContext";
 
 export const metadata: Metadata = {
   title: "NeuroGraph-DB Dashboard",
-  description: "Restaurant review integrity workspace",
+  description: "Product review integrity workspace",
 };
 
 export default function RootLayout({
