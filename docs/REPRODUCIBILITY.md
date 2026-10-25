@@ -1,4 +1,136 @@
-# Phase 1 Reproducibility Check
+# NeuroGraph-DB Reproduction Guide (v1.0-defense)
+
+This document specifies the exact commands and verification procedures to reproduce the database migrations, backend test suite, frontend build, containerized local environment, and both verified ML model bundle checkpoints.
+
+---
+
+## 1. Starting the Documented Local Environment
+
+Ensure Docker Desktop is running, then launch the hybrid storage infrastructure:
+
+```bash
+# 1. Start PostgreSQL 15 container (Port 5432)
+docker compose -f data_pipeline/docker-compose.postgres.yml up -d
+
+# 2. Start Neo4j 5 container (HTTP: 7474, Bolt: 7687)
+docker compose -f viz/docker-compose.neo4j.yml up -d
+# Default credentials: neo4j / neurograph123
+
+# 3. Start FastAPI Backend (Port 8000)
+cd backend
+python -m pip install -e .
+uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+
+# 4. Start Next.js Frontend Dashboard (Port 3000)
+cd ../db-dashboard/frontend
+npm install
+npm run dev
+# Dashboard accessible at: http://localhost:3000
+```
+
+Verify service readiness via the health check:
+```bash
+curl -s http://localhost:8000/health/ready
+```
+
+---
+
+## 2. Applying Database Migrations
+
+Apply all Alembic migrations up to head `0005_inductive_batch_scoring`:
+
+```bash
+cd backend
+alembic upgrade head
+```
+
+Verify current revision:
+```bash
+alembic current
+# Expected: 0005_inductive_batch_scoring (head)
+```
+
+---
+
+## 3. Running the Backend Test Suite
+
+Execute the full automated test suite covering authentication, API contracts, synthetic campaign analytics, and inductive batch scoring:
+
+```bash
+cd backend
+pytest -v
+```
+
+Expected result: `64 passed, 76 warnings in ~16s`.
+
+---
+
+## 4. Building the Frontend
+
+Compile the Next.js 14 App Router dashboard to verify TypeScript types, linting, and bundle generation:
+
+```bash
+cd db-dashboard/frontend
+npm run build
+```
+
+Expected result: `0 errors across all 14 routes`.
+
+---
+
+## 5. Verifying Transductive Model Reproduction (Lane 2)
+
+Reproduces the frozen 47,176-node raw YelpChi transductive benchmark without accessing labels:
+
+```bash
+python ml/reproduce_yelpchi_multimodal_bundle.py \
+  --bundle-dir artifacts/verified_multimodal/raw_yelpchi_multimodal_seed42_20261025T071547Z \
+  --manifest-sha256 653729f3fdd63f23ce82849b37dfa76a4dd08242bb5c05761a44ca799692defb
+```
+
+Expected JSON Output:
+```json
+{
+  "status": "passed",
+  "review_id": "--AweNX8vPGD",
+  "node_index": 2,
+  "fraud_score": 0.006804730277508497,
+  "threshold": 0.6732323232323232,
+  "labels_accessed": false
+}
+```
+*Test Metrics: ROC-AUC: 0.8439, F1-Macro: 0.6860, PR-AUC: 0.4507.*
+
+---
+
+## 6. Verifying Inductive Replay Reproduction (Lane 3)
+
+Reproduces the chronological arrival replay benchmark without accessing labels or future reviews:
+
+```bash
+python ml/reproduce_yelpchi_inductive_bundle.py \
+  --bundle-dir artifacts/verified_inductive/raw_yelpchi_inductive_seed42_20261025T125837Z \
+  --manifest-sha256 9d4f10a81937987ae7588d86e29191d355af296c6efc29ec3e5b331282d23edd
+```
+
+Expected JSON Output:
+```json
+{
+  "status": "passed",
+  "model_family": "raw_yelpchi_inductive_roberta_gnn_v1",
+  "relation_policy": "inductive-rur-rsr-rtr-v1",
+  "review_id": "PmQBUjV1wPZxWFWXb7S5lg",
+  "node_index": 37740,
+  "fraud_score": 0.0015926555497571826,
+  "threshold": 0.787070707070707,
+  "labels_accessed": false
+}
+```
+*Test Metrics: ROC-AUC: 0.8105, F1-Macro: 0.6624, PR-AUC: 0.4211.*
+
+---
+
+## 7. Historical Audit Log & Phase 1 Lineage Archive
 
 Date: 2026-10-23. Read-only search and calculations; no checkpoint, predictions, metrics, embeddings, attention, or dataset were created or modified.
 
