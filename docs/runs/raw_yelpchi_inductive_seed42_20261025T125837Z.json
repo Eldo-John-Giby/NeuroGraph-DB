@@ -1,0 +1,16 @@
+{
+  "bundle_location": "/kaggle/working/neurograph-inductive-yelpchi/bundles/raw_yelpchi_inductive_seed42_20261025T125837Z",
+  "bundle_manifest_sha256": "9d4f10a81937987ae7588d86e29191d355af296c6efc29ec3e5b331282d23edd",
+  "evaluation_protocol": "inductive_temporal_replay",
+  "model_family": "raw_yelpchi_inductive_roberta_gnn_v1",
+  "relation_policy": "inductive-rur-rsr-rtr-v1",
+  "reproduction_command": "python ml/reproduce_yelpchi_inductive_bundle.py --bundle-dir /kaggle/working/neurograph-inductive-yelpchi/bundles/raw_yelpchi_inductive_seed42_20261025T125837Z --manifest-sha256 9d4f10a81937987ae7588d86e29191d355af296c6efc29ec3e5b331282d23edd",
+  "run_id": "raw_yelpchi_inductive_seed42_20261025T125837Z",
+  "selected_validation_threshold": 0.787070707070707,
+  "test_metrics": {
+    "f1_macro": 0.6624435859071317,
+    "pr_auc": 0.4210734812842015,
+    "roc_auc": 0.8104861254551642,
+    "threshold": 0.787070707070707
+  }
+}
