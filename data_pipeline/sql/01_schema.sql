@@ -34,4 +34,4 @@ CREATE TABLE fraud_predictions (
     predicted_label SMALLINT,
     created_at TIMESTAMPTZ DEFAULT now(),
     PRIMARY KEY(review_id, run_id)
-);\n
+);

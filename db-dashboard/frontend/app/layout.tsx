@@ -4,7 +4,7 @@ import { AuthProvider } from "./context/AuthContext";
 
 export const metadata: Metadata = {
   title: "NeuroGraph-DB Dashboard",
-  description: "Enterprise Multimodal Graph Database & ML Experiment Portal",
+  description: "Restaurant review integrity workspace",
 };
 
 export default function RootLayout({
@@ -14,7 +14,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className="bg-slate-950 text-slate-100 min-h-screen antialiased selection:bg-indigo-500 selection:text-white">
+      <body className="min-h-screen antialiased selection:bg-teal-200 selection:text-slate-900">
         <AuthProvider>
           {children}
         </AuthProvider>

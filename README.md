@@ -15,34 +15,95 @@
 
 ## Table of Contents
 
-1. [Overview](#overview)
-2. [System Architecture](#system-architecture)
-3. [ML Model Architecture](#ml-model-architecture)
-4. [Database Schema (PostgreSQL)](#database-schema-postgresql)
-5. [Graph Schema (Neo4j)](#graph-schema-neo4j)
-6. [Camouflage Attack Pipeline](#camouflage-attack-pipeline)
-7. [Benchmark Results](#benchmark-results)
-8. [Dataset Overview & Statistics](#dataset-overview--statistics)
-9. [Project Structure](#project-structure)
-10. [Quick Start](#quick-start)
-11. [Module Breakdown](#module-breakdown)
-12. [Artifact Contracts](#artifact-contracts)
-13. [Repository Rules](#repository-rules)
+1. [Overview & Project Purpose](#overview--project-purpose)
+2. [Target Audience & User Personas](#target-audience--user-personas)
+3. [Three-Lane Provenance Architecture](#three-lane-provenance-architecture)
+4. [Documentation & Defense Runbooks](#documentation--defense-runbooks)
+5. [System Architecture](#system-architecture)
+6. [ML Model Architecture](#ml-model-architecture)
+7. [Database Schema (PostgreSQL)](#database-schema-postgresql)
+8. [Graph Schema (Neo4j)](#graph-schema-neo4j)
+9. [Camouflage Attack Pipeline](#camouflage-attack-pipeline)
+10. [Benchmark Results](#benchmark-results)
+11. [Dataset Overview & Statistics](#dataset-overview--statistics)
+12. [Project Structure](#project-structure)
+13. [Quick Start](#quick-start)
+14. [Module Breakdown](#module-breakdown)
+15. [Artifact Contracts](#artifact-contracts)
+16. [Repository Rules](#repository-rules)
 
 ---
 
-## Overview
+## Overview & Project Purpose
 
-NeuroGraph-DB is a **relation-aware multimodal fraud-detection framework** that addresses a critical gap in review spam detection: standard GNN-based detectors fail against modern LLM-generated fake reviews that use **"fraud camouflage"** — posting benign-looking reviews across random products to manipulate graph topology and evade detection.
+NeuroGraph-DB is an enterprise-grade **relation-aware multimodal fraud detection and graph database platform** engineered to identify camouflaged, coordinated review spam on online marketplace and hospitality platforms. Standard graph neural networks degrade significantly when confronted with modern LLM-synthesized reviews and **"fraud camouflage"** — where fraudulent review rings post benign-looking ratings across random products to dilute topological anomaly signals.
+
+NeuroGraph-DB addresses this challenge through a **Dual-Branch Cross-Attention Architecture** combining frozen transformer semantics (RoBERTa 768-d) with multi-relational GraphSAGE topology (RUR, RSR, RTR relations) over a hybrid **PostgreSQL 15 (ACID system of record) + Neo4j 5 (index-free graph traversal)** infrastructure.
 
 ### Key Contributions
 
 | Contribution | Description |
 |---|---|
 | **Dual-Branch Architecture** | Jointly models frozen RoBERTa (768-d) semantic embeddings and heterogeneous graph topology via Multi-Head Cross-Attention |
-| **Hybrid Database** | PostgreSQL as the system of record (ACID, B-tree indexing) + Neo4j as the graph visualization engine (Cypher traversals) |
+| **Hybrid Database Infrastructure** | PostgreSQL 15 as the system of record (ACID, B-tree indexing) + Neo4j 5 as the graph visualization engine (Cypher traversals) |
+| **Three-Lane Provenance Model** | Strict visual and semantic isolation separating synthetic demo data, verified transductive benchmarks, and live inductive batch scoring |
 | **Camouflage Threat Evaluation** | Rigorous evaluation under 9 attack variants: 3 semantic (LLM paraphrase), 4 topology (edge dilution), 1 hub-targeted, 1 combined |
-| **Adversarial Training Protocol** | Protocol B demonstrates adversarial training substantially recovers robustness against topology attacks |
+| **Honest Inductive Replay Engine** | Zero-leakage temporal evaluation protocol for streaming review arrivals with durable leased worker queue execution |
+
+---
+
+## Target Audience & User Personas
+
+NeuroGraph-DB is structured to serve three primary operational roles:
+
+1. **Restaurant & Business Owners:**
+   - **Workflow:** Upload incoming review batches (CSV format) without labels to evaluate fraud risk.
+   - **Key Benefit:** Non-technical, transparent risk assessment summaries with explainable relation-attention breakdowns (`RUR`, `RSR`, `RTR` percentages) indicating why a review was flagged.
+2. **Fraud & Data Analysts:**
+   - **Workflow:** Investigate coordinated attack campaigns, traverse multi-hop collusive review rings in Neo4j, and audit model decisions.
+   - **Key Benefit:** Full cryptographic evidence tracking (stitched graph SHA-256, feature hashes, embedding hashes, manifest hashes) with complete local benchmark reproducibility.
+3. **Platform Administrators & ML Engineers:**
+   - **Workflow:** Supervise system health, manage role-based access control (Admin vs. Researcher), govern historical graph context permissions, and inspect durable background worker inference jobs.
+   - **Key Benefit:** Fail-closed model registration that prevents unverified checkpoints or mismatched tokenizer revisions from ever executing in production.
+
+---
+
+## Three-Lane Provenance Architecture
+
+To eliminate ambiguity between research benchmarks, synthetic simulations, and live operational inference, NeuroGraph-DB enforces three strictly isolated visual and architectural lanes:
+
+```
+┌────────────────────────────────────────────────────────────────────────────────────────┐
+│ LANE 1: SYNTHETIC RESTAURANT SCENARIO (Harbor Table Campaign)                         │
+│ • Provenance: synthetic_demo · Scenario reviews & Neo4j graph demonstration only      │
+│ • Model Scoring: STRICTLY DISABLED (no fake or unverified scores displayed)           │
+├────────────────────────────────────────────────────────────────────────────────────────┤
+│ LANE 2: VERIFIED TRANSDUCTIVE BENCHMARK (Frozen 47,176-Node YelpChi Graph)            │
+│ • Provenance: real · Transductive known-node benchmark (ROC-AUC: 0.8439, F1: 0.6860)   │
+│ • Model: Frozen RoBERTa + PyG RelationSAGE · Caches known nodes; rejects new reviews   │
+├────────────────────────────────────────────────────────────────────────────────────────┤
+│ LANE 3: INDUCTIVE RESTAURANT CSV ASSESSMENT (Temporal Arrival Replay)                 │
+│ • Provenance: real · User-uploaded CSV batches scored against permitted snapshots      │
+│ • Model: raw_yelpchi_inductive_roberta_gnn_v1 (ROC-AUC: 0.8105, F1: 0.6624)          │
+│ • Invariant: Strictly past-to-present edges; deterministic neighbor caps; zero leakage│
+└────────────────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## Documentation & Defense Runbooks
+
+| Document | Description |
+|---|---|
+| [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | **Core System Architecture:** Stack overview, Mermaid diagrams, RBAC matrix, and fail-closed model loading rules |
+| [`docs/RELEASE_CHECKLIST.md`](docs/RELEASE_CHECKLIST.md) | **v1.0 Defense Release Checklist:** Verification steps, test outputs, bundle manifest hashes, and health checks |
+| [`docs/INDUCTIVE_YELPCHI_RUNBOOK.md`](docs/INDUCTIVE_YELPCHI_RUNBOOK.md) | **Lane 3 Inductive Benchmark Runbook:** Honest temporal replay training, anti-leakage proofs, and reproduction |
+| [`docs/RAW_YELPCHI_MULTIMODAL_RUNBOOK.md`](docs/RAW_YELPCHI_MULTIMODAL_RUNBOOK.md) | **Lane 2 Transductive Benchmark Runbook:** 47,176-node multimodal graph construction, Kaggle bundle, and metrics |
+| [`docs/API_CONTRACT.md`](docs/API_CONTRACT.md) | **API Contract & Schema Specification:** Full REST endpoint specifications, request/response models, and error codes |
+| [`docs/BATCH_ANALYSIS.md`](docs/BATCH_ANALYSIS.md) | **Batch Intake & Queue Guide:** Upload validation, database leasing worker lifecycle, and status transitions |
+| [`docs/DATA_DICTIONARY.md`](docs/DATA_DICTIONARY.md) | **PostgreSQL Data Dictionary:** Table schemas, field descriptions, check constraints, and relationship graphs |
+| [`docs/ERD.md`](docs/ERD.md) | **Relational Entity-Relationship Diagram:** 3NF database schema diagrams and indexing details |
+| [`docs/REPRODUCIBILITY.md`](docs/REPRODUCIBILITY.md) | **Reproducibility Guide:** Independent local verification scripts and fixed-node tolerance assertions |
 
 ---
 

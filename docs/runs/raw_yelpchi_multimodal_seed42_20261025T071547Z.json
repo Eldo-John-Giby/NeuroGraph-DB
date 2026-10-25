@@ -1,0 +1,15 @@
+{
+  "bundle_location": "/kaggle/working/neurograph-raw-yelpchi/bundles/raw_yelpchi_multimodal_seed42_20261025T071547Z",
+  "bundle_manifest_sha256": "653729f3fdd63f23ce82849b37dfa76a4dd08242bb5c05761a44ca799692defb",
+  "evaluation_protocol": "transductive_known_node",
+  "model_claim": "Raw YelpChi review graph; frozen RoBERTa embeddings with RUR/RSR/RTR PyG GraphSAGE fusion",
+  "reproduction_command": "python ml/reproduce_yelpchi_multimodal_bundle.py --bundle-dir /kaggle/working/neurograph-raw-yelpchi/bundles/raw_yelpchi_multimodal_seed42_20261025T071547Z --manifest-sha256 653729f3fdd63f23ce82849b37dfa76a4dd08242bb5c05761a44ca799692defb",
+  "run_id": "raw_yelpchi_multimodal_seed42_20261025T071547Z",
+  "selected_validation_threshold": 0.6732323232323232,
+  "test_metrics": {
+    "f1_macro": 0.6859931492290412,
+    "pr_auc": 0.45066673018601244,
+    "roc_auc": 0.8438816033894663,
+    "threshold": 0.6732323232323232
+  }
+}

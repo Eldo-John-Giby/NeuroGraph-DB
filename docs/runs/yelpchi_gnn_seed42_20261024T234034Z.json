@@ -1,0 +1,16 @@
+{
+  "bundle_location": "/kaggle/working/neurograph-yelpchi/bundles/yelpchi_gnn_seed42_20261024T234034Z",
+  "bundle_manifest_sha256": "6b6182176157c3e17c36c7327d48ada4f3ab5c20c573cd37085801dfc5c495c6",
+  "dataset_sha256": "fedb35a8fa539b27866244d3515a47a76b20080cdacb33112da3458fd2487b42",
+  "evaluation_protocol": "transductive_known_node",
+  "model_claim": "32-feature relation-aware GNN baseline; no raw-text or RoBERTa modality",
+  "reproduction_command": "python ml/reproduce_yelpchi_gnn_bundle.py --bundle-dir /kaggle/working/neurograph-yelpchi/bundles/yelpchi_gnn_seed42_20261024T234034Z --manifest-sha256 6b6182176157c3e17c36c7327d48ada4f3ab5c20c573cd37085801dfc5c495c6",
+  "run_id": "yelpchi_gnn_seed42_20261024T234034Z",
+  "selected_validation_threshold": 0.7672727272727272,
+  "test_metrics": {
+    "f1_macro": 0.8077574850443034,
+    "pr_auc": 0.745444514686275,
+    "roc_auc": 0.9331115509889625,
+    "threshold": 0.7672727272727272
+  }
+}
