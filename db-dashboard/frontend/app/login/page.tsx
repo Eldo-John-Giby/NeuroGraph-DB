@@ -96,7 +96,7 @@ export default function LoginPage() {
             NeuroGraph-DB
           </h1>
           <p className="mt-1 text-sm text-slate-400">
-            Sign in to your restaurant review integrity workspace
+            Sign in to your product review integrity workspace
           </p>
         </div>
 

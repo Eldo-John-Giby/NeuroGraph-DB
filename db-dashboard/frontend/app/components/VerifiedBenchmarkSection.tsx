@@ -188,7 +188,7 @@ export function VerifiedBenchmarkSection({ compact = false }: { compact?: boolea
         <span className="w-2 h-2 rounded-full bg-[#12685f] shadow-[0_0_0_3px_#d2eae5]" />
         <span>VERIFIED BENCHMARK DATA</span>
         <span className="font-normal text-[#4a6b64]">
-          — verified YelpChi benchmark, separate from restaurant demo data
+          — verified YelpChi benchmark, separate from synthetic product demo data
         </span>
       </div>
 

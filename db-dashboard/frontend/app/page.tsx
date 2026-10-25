@@ -203,21 +203,21 @@ export default function DashboardPage() {
   if (authLoading || !user) return <div className="session-loading">Loading workspace…</div>;
   return <AppShell>
     <header className="page-heading">
-      <div><p className="eyebrow">Restaurant integrity workspace</p><h1>Risk overview</h1><p className="page-subtitle">Observed restaurant patterns and evidence from the available scenario data.</p></div>
+      <div><p className="eyebrow">Product review integrity workspace</p><h1>Risk overview</h1><p className="page-subtitle">Observed product patterns and evidence from the available scenario data.</p></div>
       <button className="button-secondary" onClick={refresh} disabled={loading}>Refresh data</button>
     </header>
-    {/* Lane 1: Restaurant Scenario Evidence */}
+    {/* Lane 1: Synthetic Product Scenario Evidence */}
     <div className="space-y-4">
       <div className="flex items-center gap-2">
         <span className="text-[10px] font-bold uppercase tracking-wider text-[#9b4e1e]">
-          Lane 1: Restaurant Scenario Evidence
+          Lane 1: Synthetic Product Scenario Evidence
         </span>
       </div>
       <div className="provenance-banner">
         <span className="provenance-mark" aria-hidden="true" />
         SYNTHETIC DEMO DATA <span>— scenario evidence only; not model output</span>
       </div>
-      {loading && <div className="notice-card">Loading restaurant scenario from the API…</div>}
+      {loading && <div className="notice-card">Loading synthetic product scenario from the API…</div>}
       {!loading && error && (
         <div className="notice-card notice-error">
           <strong>Scenario data unavailable</strong>
@@ -229,23 +229,21 @@ export default function DashboardPage() {
         <>
           <section className="restaurant-intro">
             <div>
-              <p className="eyebrow">Restaurant under review</p>
-              <h2>{summary.product.name || 'Restaurant name not supplied'}</h2>
+              <p className="eyebrow">Product under review</p>
+              <h2>{summary.product.name || 'Product name not supplied'}</h2>
               <p>{summary.campaign_name} · {dateRange(summary.attack_window.start, summary.attack_window.end)}</p>
             </div>
             <Link className="button-primary" href={`/campaigns/${encodeURIComponent(summary.campaign_key)}`}>
               Investigate campaign <ArrowUpRight className="h-3.5 w-3.5 ml-1" />
             </Link>
           </section>
-          <section className="metric-grid" aria-label="Restaurant risk metrics">
+          <section className="metric-grid" aria-label="Product risk metrics">
             <Metric label="Observed rating" value={formatRating(comparison.observed_attack_window.mean_rating)} suffix="/ 5" detail={`${comparison.observed_attack_window.review_count.toLocaleString()} reviews in attack window`} />
-            <Metric label="Scenario-adjusted rating" value={formatRating(comparison.scenario_adjusted_attack_window.mean_rating)} suffix="/ 5" detail="Campaign-linked reviews excluded; not a model score" tone="teal" />
             <Metric label="Flagged reviews" value={summary.attack_review_count.toLocaleString()} detail={`${summary.one_star_review_count.toLocaleString()} one-star · synthetic campaign membership`} tone="risk" />
-            <Metric label="Active campaigns" value="—" detail="Campaign lifecycle status is not provided by this API" />
           </section>
           <div className="content-grid overview-charts">
             <section className="panel chart-panel">
-              <PanelTitle kicker="Restaurant trend" title="Rating over time" detail="Daily observed mean rating for the restaurant"/>
+              <PanelTitle kicker="Product trend" title="Rating over time" detail="Daily observed mean rating for the product"/>
               <RatingTimeline items={timeline.items}/>
               <div className="chart-legend"><span className="legend-dot teal-dot"/>Observed rating</div>
             </section>
@@ -284,7 +282,7 @@ export default function DashboardPage() {
     {/* Lane 2: Verified YelpChi Multimodal Benchmark */}
     <VerifiedBenchmarkSection />
 
-    {/* Lane 3: Inductive Restaurant CSV Assessment */}
+    {/* Lane 3: Inductive Product CSV Assessment */}
     <InductiveBatchSection />
   </AppShell>;
 }

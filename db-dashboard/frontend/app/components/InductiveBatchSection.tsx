@@ -240,7 +240,7 @@ export function InductiveBatchSection({
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="flex items-center gap-2">
             <span className="text-[10px] font-bold uppercase tracking-wider text-[#6366f1]">
-              Lane 3: Inductive Restaurant CSV Assessment
+              Lane 3: Inductive Product CSV Assessment
             </span>
           </div>
           <div className="flex items-center gap-2">
@@ -277,7 +277,7 @@ export function InductiveBatchSection({
         <div className="flex items-center gap-2">
           <FileSpreadsheet className="h-4 w-4 text-[#7c3aed]" />
           <span>
-            <strong>INDUCTIVE RESTAURANT BATCH SCORING</strong> — Real-time temporal graph inference on uploaded CSVs
+            <strong>INDUCTIVE PRODUCT BATCH SCORING</strong> — Real-time temporal graph inference on uploaded CSVs
           </span>
         </div>
         <span className="text-[10px] font-semibold uppercase tracking-wider text-[#6d28d9] bg-[#ede9fe] px-2 py-0.5 rounded">
@@ -303,7 +303,7 @@ export function InductiveBatchSection({
           <FileSpreadsheet className="h-8 w-8 text-[#9ba6a0] mx-auto mb-2" />
           <p className="font-semibold text-[#22302a] text-sm mb-1">No Inductive Batch Uploads Found</p>
           <p className="max-w-md mx-auto mb-4 text-[#74817b]">
-            Upload a restaurant review CSV in the intake workspace with a permitted snapshot to trigger real-time inductive GNN scoring.
+            Upload a product review CSV in the intake workspace with a permitted snapshot to trigger real-time inductive GNN scoring.
           </p>
         </div>
       )}
