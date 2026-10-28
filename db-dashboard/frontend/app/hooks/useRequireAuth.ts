@@ -14,10 +14,12 @@ export function useRequireAuth(adminOnly = false) {
 
   useEffect(() => {
     if (!isLoading && !user) {
-      router.push('/login');
+      // A full transition drops cached protected route state after sign-out
+      // and remains reliable across production deployments and role switches.
+      if (window.location.pathname !== '/login') window.location.replace('/login');
     }
     if (!isLoading && user && adminOnly && !isAdmin) {
-      router.push('/');
+      router.replace('/');
     }
   }, [isLoading, user, adminOnly, isAdmin, router]);
 

@@ -408,7 +408,18 @@ def test_batch_csv_global_validation_and_duplicate_database_key(client, reader_t
         files={"file": ("duplicate-existing.csv", csv_content.split(b"\n", 1)[0] + b"\n" + csv_content.split(b"\n", 1)[1], "text/csv")},
     )
     assert duplicate.status_code == 201
-    result = client.get(f"/api/v1/batch-analyses/{duplicate.json()['batch_analysis_id']}/results", headers=headers)
+    assert duplicate.json()["batch_analysis_id"] == uploaded.json()["batch_analysis_id"]
+    assert duplicate.json()["reused_existing_batch"] is True
+    # A byte-for-byte retry recovers the existing receipt and its row outcomes.
+    # A different file reusing the same review IDs must still be rejected.
+    conflict = client.post(
+        "/api/v1/batch-analyses", headers=headers,
+        data={"source_system": "batch-test"},
+        files={"file": ("changed.csv", csv_content.replace(b"First", b"Changed first review"), "text/csv")},
+    )
+    assert conflict.status_code == 201
+    assert conflict.json()["accepted_count"] == 0
+    result = client.get(f"/api/v1/batch-analyses/{conflict.json()['batch_analysis_id']}/results", headers=headers)
     assert result.json()["items"][0]["row_state"] == "rejected"
     assert result.json()["items"][0]["validation_errors"][0]["code"] == "already_imported"
 

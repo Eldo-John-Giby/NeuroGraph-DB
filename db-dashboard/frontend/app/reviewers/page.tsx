@@ -224,19 +224,19 @@ export default function ReviewersPage() {
       ) : reviewers && reviewers.length > 0 ? (
         <div className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <StatCard label="Total Reviewers" value={reviewers.length} color="indigo" />
+            <StatCard label="Reviewers on this page" value={reviewers.length} color="indigo" />
             <StatCard
-              label="Active Accounts"
-              value={reviewers.filter((r) => (r.total_reviews ?? 0) > 0).length}
+              label="Linked review totals"
+              value="Not provided"
               color="emerald"
             />
             <StatCard
-              label="Flagged Camouflage"
-              value={reviewers.filter((r) => (r.risk_score ?? 0) > 0.75).length}
+              label="Model risk"
+              value="Open an analysis"
               color="rose"
             />
             <StatCard
-              label="Source Platforms"
+              label="Sources on this page"
               value={Array.from(new Set(reviewers.map((r) => r.source_system))).length}
               color="sky"
             />

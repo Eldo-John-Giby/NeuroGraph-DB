@@ -1,7 +1,7 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { apiRequest, isApiError } from '../lib/api';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
+import { apiRequest, clearSession, isApiError, saveSession, SESSION_EXPIRED_EVENT } from '../lib/api';
 
 export interface User {
   user_id: number;
@@ -34,56 +34,74 @@ const AuthContext = createContext<AuthContextType>({
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const authEpoch = useRef(0);
 
   // Administration access requires verified ADMIN role and completed auth loading
   const isAdmin = !isLoading && Boolean(user?.role_key?.trim().toUpperCase() === 'ADMIN');
 
   const login = useCallback((accessToken: string, newUser: User) => {
-    localStorage.setItem('neuro_token', accessToken);
-    localStorage.setItem('neuro_user', JSON.stringify(newUser));
+    authEpoch.current += 1;
+    saveSession(accessToken, newUser);
     setUser(newUser);
     setIsLoading(false);
   }, []);
 
   const logout = useCallback(async () => {
+    authEpoch.current += 1;
     try {
       await apiRequest('/api/v1/auth/logout', { method: 'POST' });
     } catch {
       // Ignore errors during logout
     }
-    localStorage.removeItem('neuro_token');
-    localStorage.removeItem('neuro_user');
+    clearSession();
     setUser(null);
     setIsLoading(false);
   }, []);
 
   useEffect(() => {
+    let active = true;
+    const epoch = authEpoch.current;
+    const sessionEnded = () => {
+      authEpoch.current += 1;
+      setUser(null);
+      setIsLoading(false);
+    };
+    window.addEventListener(SESSION_EXPIRED_EVENT, sessionEnded);
+    const cleanup = () => {
+      active = false;
+      window.removeEventListener(SESSION_EXPIRED_EVENT, sessionEnded);
+    };
     const savedToken = localStorage.getItem('neuro_token');
     const savedUser = localStorage.getItem('neuro_user');
     if (savedToken && savedUser) {
       try {
         const parsed = JSON.parse(savedUser) as User;
-        setUser(parsed);
-        // Validate the session is still alive by calling /auth/me
+        // Verify the role before exposing protected pages. apiRequest renews
+        // expired access tokens using the HttpOnly refresh cookie.
         apiRequest<User>('/api/v1/auth/me')
           .then((freshUser) => {
+            if (!active || epoch !== authEpoch.current) return;
             setUser(freshUser);
             localStorage.setItem('neuro_user', JSON.stringify(freshUser));
           })
-          .catch(() => {
-            // Session is invalid, clear everything
-            localStorage.removeItem('neuro_token');
-            localStorage.removeItem('neuro_user');
-            setUser(null);
+          .catch((error: unknown) => {
+            if (!active || epoch !== authEpoch.current) return;
+            if (isApiError(error) && error.status === 401) {
+              if (error.code !== 'session_changed') clearSession();
+              setUser(null);
+            } else {
+              // A temporary network failure is not proof of session expiry.
+              setUser(parsed);
+            }
           })
-          .finally(() => setIsLoading(false));
-        return;
+          .finally(() => { if (active && epoch === authEpoch.current) setIsLoading(false); });
+        return cleanup;
       } catch {
-        localStorage.removeItem('neuro_token');
-        localStorage.removeItem('neuro_user');
+        clearSession();
       }
     }
     setIsLoading(false);
+    return cleanup;
   }, []);
 
   return (

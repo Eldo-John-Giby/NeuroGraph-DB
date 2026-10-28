@@ -1,0 +1,4 @@
+review_id,reviewer_id,product_id,rating,review_date,review_text
+sample-001,customer-01,headphones-01,5,2026-10-20,Comfortable headphones with clear sound and a sturdy case.
+sample-002,customer-02,headphones-01,2,2026-10-21,The battery stopped charging after a week and support was slow.
+sample-003,customer-03,headphones-01,4,2026-10-22,Good sound for the price but the microphone could be better.

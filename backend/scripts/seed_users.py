@@ -1,4 +1,5 @@
 """Create the default local UI accounts if they do not already exist."""
+import os
 import sys
 from pathlib import Path
 
@@ -12,8 +13,8 @@ from app.security import hash_password
 
 
 DEFAULT_USERS = (
-    ("admin@neurograph.local", "Admin1234567!", "ADMIN", "Administrator"),
-    ("researcher@neurograph.local", "Research1234567!", "RESEARCHER", "Researcher"),
+    ("admin@neurograph.local", os.environ["ADMIN_PASSWORD"], "ADMIN", "Administrator"),
+    ("researcher@neurograph.local", os.environ["RESEARCHER_PASSWORD"], "RESEARCHER", "Researcher"),
 )
 
 

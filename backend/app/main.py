@@ -11,6 +11,7 @@ from sqlalchemy.orm import Session
 
 from app.api.batches import router as batch_router
 from app.api.campaigns import router as campaign_router
+from app.api.feedback import router as feedback_router
 from app.api.routes import router
 from app.api.verified_baseline import router as verified_baseline_router
 from app.api.verified_multimodal import router as verified_multimodal_router
@@ -20,12 +21,13 @@ from app.models import ModelVersion, PreprocessingVersion
 
 app = FastAPI(title="NeuroGraph-DB API", version="0.1.0")
 logger = logging.getLogger("neurograph.api")
-app.add_middleware(CORSMiddleware, allow_origins=["*"],
+app.add_middleware(CORSMiddleware, allow_origins=[origin.strip() for origin in get_settings().cors_origins.split(',') if origin.strip() and origin.strip() != '*'],
                    allow_credentials=True, allow_methods=["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
                    allow_headers=["Authorization", "Content-Type", "Idempotency-Key"])
 app.include_router(router)
 app.include_router(batch_router)
 app.include_router(campaign_router)
+app.include_router(feedback_router)
 app.include_router(verified_baseline_router)
 app.include_router(verified_multimodal_router)
 

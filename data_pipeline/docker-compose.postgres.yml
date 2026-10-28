@@ -6,8 +6,8 @@ services:
     container_name: neurograph_db
     environment:
       POSTGRES_DB: neurograph
-      POSTGRES_USER: neuro
-      POSTGRES_PASSWORD: neuro
+      POSTGRES_USER: ${POSTGRES_USER:-neuro}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in an ignored .env file}
     ports:
       - "5432:5432"
     volumes:

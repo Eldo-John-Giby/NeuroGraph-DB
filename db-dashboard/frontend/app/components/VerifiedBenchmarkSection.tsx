@@ -139,24 +139,6 @@ export function VerifiedBenchmarkSection({ compact = false }: { compact?: boolea
     }
   };
 
-  const getAttentionExplanation = (score: number) => {
-    if (score >= 0.95) {
-      return {
-        dominant: 'RSR Dominant (Co-rated clique)',
-        detail: 'Dense product-rating clique concentration; cross-attention heavily weights RSR neighbours over raw text.',
-      };
-    }
-    if (score >= 0.6732) {
-      return {
-        dominant: 'RSR + RTR Fusion (Temporal burst)',
-        detail: 'Elevated same-month rating activity; relation attention gate shifts weight toward combined graph topology.',
-      };
-    }
-    return {
-      dominant: 'Text Dominant (Sparse graph)',
-      detail: 'Isolated relational topology; gated representation defaults to benign RoBERTa semantic text embedding.',
-    };
-  };
 
   return (
     <section className="mt-8 space-y-5" aria-label="Verified multimodal benchmark lane">
@@ -166,11 +148,11 @@ export function VerifiedBenchmarkSection({ compact = false }: { compact?: boolea
           <div className="flex items-center gap-2">
             <ShieldCheck className="h-4 w-4 text-[#12685f]" />
             <p className="text-[10px] font-bold uppercase tracking-wider text-[#12685f]">
-              Lane 2: Verified Multimodal GNN Benchmark
+              Reference model · transductive benchmark
             </p>
           </div>
           <h2 className="text-xl font-medium text-[#1e2927] font-serif mt-1">
-            Labelled Raw YelpChi Multimodal Benchmark
+            Multimodal benchmark results
           </h2>
         </div>
         <button
@@ -362,13 +344,12 @@ export function VerifiedBenchmarkSection({ compact = false }: { compact?: boolea
                     <th className="px-3 py-2.5">Node #</th>
                     <th className="px-3 py-2.5">Fraud Score</th>
                     <th className="px-3 py-2.5">Decision</th>
-                    <th className="px-4 py-2.5">Relation-Attention Explanation</th>
+                    <th className="px-4 py-2.5">Prediction scope</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#edf0eb]">
                   {results.map((row) => {
                     const isSpam = row.fraud_score >= status.threshold;
-                    const exp = getAttentionExplanation(row.fraud_score);
                     return (
                       <tr key={row.review_id} className="hover:bg-[#f9faf7] transition-colors">
                         <td className="px-3.5 py-2.5 font-mono text-[11px] font-medium text-[#1e2927]">
@@ -400,20 +381,20 @@ export function VerifiedBenchmarkSection({ compact = false }: { compact?: boolea
                         <td className="px-3 py-2.5">
                           {isSpam ? (
                             <span className="inline-flex items-center rounded-full bg-[#fbefe5] px-2 py-0.5 text-[10px] font-bold text-[#9b4e1e] border border-[#edc49e]">
-                              Spam / High Risk
+                              Flagged by model
                             </span>
                           ) : (
                             <span className="inline-flex items-center rounded-full bg-[#eef7f5] px-2 py-0.5 text-[10px] font-bold text-[#0b514a] border border-[#c3ded8]">
-                              Legitimate
+                              Below threshold
                             </span>
                           )}
                         </td>
                         <td className="px-4 py-2.5">
                           <span className="block text-[11px] font-semibold text-[#1e2927]">
-                            {exp.dominant}
+                            Known graph node
                           </span>
                           <span className="block text-[10px] text-[#68736f] mt-0.5">
-                            {exp.detail}
+                            Per-review attention is not returned by this benchmark API.
                           </span>
                         </td>
                       </tr>
@@ -488,7 +469,7 @@ export function VerifiedBenchmarkSection({ compact = false }: { compact?: boolea
                   <span className="text-[11px] text-[#4a6b64] mt-0.5 block">
                     Fraud Probability: <strong className="font-mono text-[#0b514a]">{predictResult.fraud_score.toFixed(6)}</strong>
                     {' · '}Decision:{' '}
-                    <strong>{predictResult.predicted_label === 1 ? 'Spam (High Risk)' : 'Legitimate (Low Risk)'}</strong>
+                    <strong>{predictResult.predicted_label === 1 ? 'Flagged by model' : 'Below model threshold'}</strong>
                   </span>
                 </div>
                 <span className="rounded bg-white px-2 py-1 text-[10px] font-bold text-[#12685f] border border-[#c3ded8]">

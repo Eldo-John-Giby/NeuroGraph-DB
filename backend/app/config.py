@@ -18,7 +18,7 @@ class Settings(BaseSettings):
     neo4j_uri: str | None = None
     neo4j_username: str | None = None
     neo4j_password: str | None = None
-    cors_origins: str = "http://localhost:5173"
+    cors_origins: str = "http://localhost:3000,http://localhost:5173"
 
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 

@@ -4,13 +4,13 @@ from datetime import datetime, timezone
 
 import jwt
 from fastapi import APIRouter, Depends, Header, HTTPException, Request, Response
-from sqlalchemy import func, select
+from sqlalchemy import func, or_, select, true
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.config import get_settings
 from app.db import get_db
-from app.models import (AuditLog, FraudPrediction, GraphSnapshot, GraphSnapshotReview,
+from app.models import (AuditLog, BatchAnalysis, BatchAnalysisRow, FraudPrediction, GraphSnapshot, GraphSnapshotReview,
                         GraphSyncJob, InferenceRun, ModelVersion, PreprocessingVersion,
                         Product, Reviewer, Review, Role, SessionToken, User)
 from app.schemas import GraphSyncCreate, InferenceRequest, LoginRequest, ReviewCreate, UserCreate
@@ -20,6 +20,17 @@ from app.services.yelpchi_baseline import get_verified_baseline
 from app.services.yelpchi_multimodal import get_verified_multimodal
 
 router = APIRouter(prefix="/api/v1")
+
+
+def visible_review(db: Session, user: User):
+    role = db.get(Role, user.role_id)
+    if role and role.role_key == "ADMIN":
+        return true()
+    reused = select(BatchAnalysisRow.review_id).join(
+        BatchAnalysis, BatchAnalysis.batch_analysis_id == BatchAnalysisRow.batch_analysis_id
+    ).where(BatchAnalysis.requested_by_user_id == user.user_id, BatchAnalysisRow.review_id.is_not(None))
+    return or_(Review.submitted_by_user_id.is_(None), Review.source_system == "synthetic_demo",
+               Review.submitted_by_user_id == user.user_id, Review.review_id.in_(reused))
 
 
 def user_payload(db: Session, user: User) -> dict:
@@ -159,11 +170,11 @@ def list_reviews(limit: int = 25, offset: int = 0, source_system: str | None = N
                  reviewer_id: int | None = None, product_id: int | None = None,
                  reviewed_after: datetime | None = None, reviewed_before: datetime | None = None,
                  ground_truth_available: bool | None = None,
-                 _: User = Depends(current_user), db: Session = Depends(get_db)):
+                 user: User = Depends(current_user), db: Session = Depends(get_db)):
     validate_pagination(limit, offset)
     if reviewed_after and reviewed_before and reviewed_after > reviewed_before:
         raise HTTPException(status_code=422, detail={"code": "invalid_date_range", "message": "reviewed_after must be before reviewed_before."})
-    filters = []
+    filters = [visible_review(db, user)]
     if source_system is not None:
         filters.append(Review.source_system == source_system)
     if reviewer_id is not None:
@@ -385,12 +396,17 @@ def list_inference_runs(limit: int = 25, offset: int = 0, status: str | None = N
 
 @router.get("/reviews/{review_id}/predictions")
 def list_review_predictions(review_id: int, limit: int = 25, offset: int = 0,
-                            _: User = Depends(current_user), db: Session = Depends(get_db)):
+                            user: User = Depends(current_user), db: Session = Depends(get_db)):
     validate_pagination(limit, offset)
-    if db.get(Review, review_id) is None:
+    if db.scalar(select(Review.review_id).where(Review.review_id == review_id, visible_review(db, user))) is None:
         raise HTTPException(status_code=404, detail={"code": "review_not_found", "message": "Review was not found."})
     filters = [FraudPrediction.review_id == review_id]
-    total = db.scalar(select(func.count()).select_from(FraudPrediction).where(*filters)) or 0
+    role = db.get(Role, user.role_id)
+    if not role or role.role_key != "ADMIN":
+        filters.append(or_(InferenceRun.requested_by_user_id == user.user_id,
+                           InferenceRun.requested_by_user_id.is_(None)))
+    total = db.scalar(select(func.count()).select_from(FraudPrediction).join(InferenceRun,
+        InferenceRun.inference_run_id == FraudPrediction.inference_run_id).where(*filters)) or 0
     rows = db.execute(
         select(FraudPrediction, InferenceRun, ModelVersion, PreprocessingVersion,
                GraphSnapshot, GraphSnapshotReview.split)

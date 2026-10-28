@@ -23,6 +23,21 @@ from app.services.inductive_yelpchi import BundleVerificationError, get_inductiv
 
 
 @pytest.fixture
+def isolated_test_embeddings(monkeypatch):
+    """Stub only embedding inputs for fabricated test history; never used in serving.
+
+    These tests exercise worker persistence and real classification-head attention,
+    not RoBERTa quality. Live model quality is checked by separate bundle reproduction.
+    """
+    import torch
+    runtime = get_inductive_runtime()
+    keys = [f'hist-rev-{index}' for index in range(3)] + [f'bulk-hist-{index:03d}' for index in range(60)] + ['hist-future-2012']
+    monkeypatch.setattr(runtime, '_serving_review_id_to_idx', {key: index for index, key in enumerate(keys)})
+    monkeypatch.setattr(runtime, 'encode_texts', lambda texts, batch_size=32: torch.zeros((len(texts), 768)))
+    return runtime
+
+
+@pytest.fixture
 def seeded_inductive_environment(client):
     """Seed the database with verified preprocessing, model, and graph snapshot."""
     with client._testing_session_factory() as session:
@@ -165,7 +180,7 @@ def test_inductive_csv_upload_returns_queued_status(client, reader_token, seeded
     assert items[1]["prediction"] is None
 
 
-def test_inductive_worker_scoring_and_evidence_persistence(client, reader_token, seeded_inductive_environment):
+def test_inductive_worker_scoring_and_evidence_persistence(client, reader_token, seeded_inductive_environment, isolated_test_embeddings):
     """Calling /score executes the leased job and returns predictions with attention and evidence."""
     headers = {"Authorization": f"Bearer {reader_token}"}
     snapshot_id = seeded_inductive_environment["snapshot_id"]
@@ -521,7 +536,7 @@ def test_context_query_excludes_ground_truth_and_label_source(client, seeded_ind
             assert not hasattr(rev, "label_source")
 
 
-def test_future_dated_historic_reviews_cannot_become_neighbors(client, reader_token, seeded_inductive_environment):
+def test_future_dated_historic_reviews_cannot_become_neighbors(client, reader_token, seeded_inductive_environment, isolated_test_embeddings):
     """Future-dated historic reviews relative to a candidate review cannot be connected as neighbors."""
     headers = {"Authorization": f"Bearer {reader_token}"}
     snapshot_id = seeded_inductive_environment["snapshot_id"]
@@ -575,7 +590,7 @@ def test_future_dated_historic_reviews_cannot_become_neighbors(client, reader_to
     assert future_rev_id not in evidence["historic_review_ids"]
 
 
-def test_neighbor_cap_and_deterministic_ordering_are_stable(client, reader_token, seeded_inductive_environment):
+def test_neighbor_cap_and_deterministic_ordering_are_stable(client, reader_token, seeded_inductive_environment, isolated_test_embeddings):
     """Each relation enforces a 50-neighbor cap and maintains deterministic tie-breaking and hashes."""
     headers = {"Authorization": f"Bearer {reader_token}"}
     snapshot_id = seeded_inductive_environment["snapshot_id"]
@@ -652,7 +667,7 @@ def test_neighbor_cap_and_deterministic_ordering_are_stable(client, reader_token
     assert evidence["historic_review_ids"] == evidence_2["historic_review_ids"]
 
 
-def test_stitched_graph_does_not_mutate_persisted_snapshot(client, reader_token, seeded_inductive_environment):
+def test_stitched_graph_does_not_mutate_persisted_snapshot(client, reader_token, seeded_inductive_environment, isolated_test_embeddings):
     """Executing scoring does not alter the immutable graph snapshot record or underlying file."""
     import hashlib
     from pathlib import Path
@@ -780,7 +795,7 @@ def test_duplicate_idempotency_key_does_not_create_duplicate_runs(client, reader
         assert run_count == 1
 
 
-def test_attention_stored_is_emitted_by_model_not_synthesized(client, reader_token, seeded_inductive_environment):
+def test_attention_stored_is_emitted_by_model_not_synthesized(client, reader_token, seeded_inductive_environment, isolated_test_embeddings):
     """Relation attention weights are emitted by the model, dynamic across edge contexts, and sum to 1."""
     headers = {"Authorization": f"Bearer {reader_token}"}
     snapshot_id = seeded_inductive_environment["snapshot_id"]

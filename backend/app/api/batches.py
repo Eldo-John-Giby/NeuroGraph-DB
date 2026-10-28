@@ -2,9 +2,11 @@
 import hashlib
 import uuid
 from datetime import datetime, timedelta, timezone
+from typing import Literal
+import json
 
 from fastapi import APIRouter, Depends, File, Form, Header, HTTPException, UploadFile
-from sqlalchemy import func, select
+from sqlalchemy import case, func, or_, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -37,6 +39,8 @@ def _batch_payload(batch: BatchAnalysis, db: Session | None = None) -> dict:
     payload = {
         "batch_analysis_id": batch.batch_analysis_id,
         "batch_key": batch.batch_key,
+        "source_filename": batch.source_filename,
+        "source_system": batch.source_system,
         "status": batch.status,
         "row_count": batch.row_count,
         "accepted_count": batch.accepted_count,
@@ -48,6 +52,13 @@ def _batch_payload(batch: BatchAnalysis, db: Session | None = None) -> dict:
         "created_at": batch.created_at,
     }
     if db is not None and batch.inference_run_id is not None:
+        counts = db.execute(select(
+            func.count(FraudPrediction.fraud_prediction_id),
+            func.coalesce(func.sum(case((FraudPrediction.predicted_label == 1, 1), else_=0)), 0),
+        ).where(FraudPrediction.inference_run_id == batch.inference_run_id)).one()
+        payload["scored_count"] = counts[0]
+        payload["flagged_count"] = int(counts[1])
+        payload["cleared_count"] = counts[0] - int(counts[1])
         run = db.get(InferenceRun, batch.inference_run_id)
         if run is not None:
             payload["inference_run"] = {
@@ -76,6 +87,23 @@ def _batch_payload(batch: BatchAnalysis, db: Session | None = None) -> dict:
                     "last_error": job.last_error,
                 }
     return payload
+
+
+@router.get("/verified-inductive/status")
+def inductive_model_status(_: User = Depends(current_user)):
+    from app.services.inductive_yelpchi import get_inductive_runtime
+    try:
+        runtime = get_inductive_runtime()
+        metrics = json.loads((runtime.bundle_dir / "metrics.json").read_text())
+        config = json.loads((runtime.bundle_dir / "model_config.json").read_text())
+        manifest = json.loads((runtime.bundle_dir / "run_manifest.json").read_text())
+        return {"available": True, "run_id": manifest["run_id"],
+                "manifest_sha256": runtime.manifest_sha, "threshold": runtime.threshold,
+                "metrics": metrics["test"], "validation_f1_macro": metrics["best_validation_f1_macro"],
+                "evaluation_protocol": "inductive_temporal_replay", "split": config["split"],
+                "relation_policy": "inductive-rur-rsr-rtr-v1", "reproduction_verified": runtime.is_verified}
+    except Exception:
+        return {"available": False, "details": "The verified inductive model is temporarily unavailable."}
 
 
 def _assert_can_read_batch(db: Session, batch: BatchAnalysis, user: User) -> None:
@@ -191,12 +219,33 @@ async def create_batch_analysis(
             if existing_batch is not None:
                 return _batch_payload(existing_batch, db=db)
 
+    filename = (file.filename or "reviews.csv").replace("\\", "/").split("/")[-1]
+    filename = "".join(char for char in filename if char.isprintable()).strip()[:255] or "reviews.csv"
     content = await file.read(MAX_CSV_BYTES + 1)
     await file.close()
     rows = parse_review_csv(content)
     normalized_source = source_system.strip()
     if not normalized_source:
         raise HTTPException(status_code=422, detail={"code": "invalid_source_system", "message": "source_system must not be empty."})
+
+    # Replaying the same upload opens the original saved batch. A second click
+    # must not turn previously accepted reviews into a new all-rejected import.
+    upload_sha256 = hashlib.sha256(content).hexdigest()
+    existing_batch = db.scalar(
+        select(BatchAnalysis).where(
+            BatchAnalysis.requested_by_user_id == user.user_id,
+            BatchAnalysis.source_system == normalized_source,
+            BatchAnalysis.upload_sha256 == upload_sha256,
+            BatchAnalysis.accepted_count > 0,
+        ).order_by(BatchAnalysis.batch_analysis_id).limit(1)
+    )
+    if existing_batch is not None:
+        if not existing_batch.source_filename:
+            existing_batch.source_filename = filename
+            db.commit()
+        payload = _batch_payload(existing_batch, db=db)
+        payload["reused_existing_batch"] = True
+        return payload
 
     snapshot = None
     if historic_graph_snapshot_id is not None:
@@ -256,18 +305,39 @@ async def create_batch_analysis(
 
     try:
         with db.begin_nested():
-            existing_keys = set(db.scalars(
-                select(Review.source_review_key).where(
+            existing_reviews = {
+                review.source_review_key: (review, reviewer_key, product_key)
+                for review, reviewer_key, product_key in db.execute(
+                select(Review, Reviewer.external_reviewer_key, Product.external_product_key)
+                .outerjoin(Reviewer, Reviewer.reviewer_id == Review.reviewer_id)
+                .outerjoin(Product, Product.product_id == Review.product_id)
+                .where(
                     Review.source_system == normalized_source,
                     Review.source_review_key.in_(upload_keys),
                 )
-            )) if upload_keys else set()
+            )} if upload_keys else {}
+            reusable_reviews: dict[str, Review] = {}
             for row in rows:
-                if row.accepted and row.uploaded_review_key in existing_keys:
+                existing = existing_reviews.get(row.uploaded_review_key) if row.accepted else None
+                if existing is None:
+                    continue
+                review, reviewer_key, product_key = existing
+                reviewed_at = review.reviewed_at
+                if reviewed_at is not None and reviewed_at.tzinfo is None:
+                    reviewed_at = reviewed_at.replace(tzinfo=timezone.utc)
+                # Source review IDs are global to a source, while receipts and
+                # inference runs belong to their uploader. Reuse an unchanged
+                # review in the new user's batch without exposing another user's
+                # receipt or silently overwriting any review fields.
+                if (reviewer_key == row.reviewer_key and product_key == row.product_key
+                        and review.rating == row.rating and reviewed_at == row.reviewed_at
+                        and review.review_text == row.review_text):
+                    reusable_reviews[row.uploaded_review_key] = review
+                else:
                     row_errors[row.row_number].append({
                         "field": "review_id",
                         "code": "already_imported",
-                        "message": "review_id already exists for this source_system.",
+                        "message": "review_id already exists with different review data for this source_system.",
                     })
 
             accepted_rows = [row for row in rows if not row_errors[row.row_number]]
@@ -319,8 +389,9 @@ async def create_batch_analysis(
             batch = BatchAnalysis(
                 requested_by_user_id=user.user_id,
                 source_system=normalized_source,
+                source_filename=filename,
                 historic_graph_snapshot_id=historic_graph_snapshot_id,
-                upload_sha256=hashlib.sha256(content).hexdigest(),
+                upload_sha256=upload_sha256,
                 row_count=len(rows), accepted_count=accepted_count,
                 rejected_count=rejected_count, status=status,
                 blocking_reasons=blocking_reasons,
@@ -333,18 +404,20 @@ async def create_batch_analysis(
                 review_id = None
                 row_state = "rejected"
                 if not errors:
-                    review = Review(
-                        source_system=normalized_source,
-                        source_review_key=row.uploaded_review_key,
-                        reviewer_id=reviewer_map[row.reviewer_key].reviewer_id,
-                        product_id=product_map[row.product_key].product_id,
-                        submitted_by_user_id=user.user_id,
-                        rating=row.rating,
-                        reviewed_at=row.reviewed_at,
-                        review_text=row.review_text,
-                    )
-                    db.add(review)
-                    db.flush()
+                    review = reusable_reviews.get(row.uploaded_review_key)
+                    if review is None:
+                        review = Review(
+                            source_system=normalized_source,
+                            source_review_key=row.uploaded_review_key,
+                            reviewer_id=reviewer_map[row.reviewer_key].reviewer_id,
+                            product_id=product_map[row.product_key].product_id,
+                            submitted_by_user_id=user.user_id,
+                            rating=row.rating,
+                            reviewed_at=row.reviewed_at,
+                            review_text=row.review_text,
+                        )
+                        db.add(review)
+                        db.flush()
                     review_id = review.review_id
                     row_state = "accepted"
                 db.add(BatchAnalysisRow(
@@ -395,14 +468,32 @@ async def create_batch_analysis(
 def list_batch_analyses(
     limit: int = 25,
     offset: int = 0,
+    scope: Literal["mine", "all"] = "mine",
+    q: str = "",
+    status: Literal["blocked", "queued", "running", "completed", "partial", "failed", "validation_failed"] | None = None,
     user: User = Depends(current_user),
     db: Session = Depends(get_db),
 ):
     if not 1 <= limit <= 100 or offset < 0:
         raise HTTPException(status_code=422, detail={"code": "invalid_pagination", "message": "limit must be 1..100 and offset nonnegative."})
-    total = db.scalar(select(func.count()).select_from(BatchAnalysis)) or 0
+    filters = []
+    if scope == "all":
+        role = db.get(Role, user.role_id)
+        if role is None or role.role_key != "ADMIN":
+            raise HTTPException(status_code=403, detail={"code": "forbidden", "message": "Only administrators may view all users' uploads."})
+    else:
+        filters.append(BatchAnalysis.requested_by_user_id == user.user_id)
+    if q.strip():
+        term = "%" + q.strip()[:160].replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_") + "%"
+        filters.append(or_(BatchAnalysis.source_filename.ilike(term, escape="\\"),
+                           BatchAnalysis.source_system.ilike(term, escape="\\")))
+    if status:
+        filters.append(BatchAnalysis.status == status)
+    total, completed, submitted = db.execute(select(func.count(),
+        func.coalesce(func.sum(case((BatchAnalysis.status == "completed", 1), else_=0)), 0),
+        func.coalesce(func.sum(BatchAnalysis.row_count), 0)).select_from(BatchAnalysis).where(*filters)).one()
     batches = db.scalars(
-        select(BatchAnalysis)
+        select(BatchAnalysis).where(*filters)
         .order_by(BatchAnalysis.batch_analysis_id.desc())
         .offset(offset).limit(limit)
     ).all()
@@ -411,6 +502,7 @@ def list_batch_analyses(
         "total": total,
         "limit": limit,
         "offset": offset,
+        "summary": {"completed": int(completed), "submitted_rows": int(submitted)},
     }
 
 
@@ -505,9 +597,25 @@ def get_batch_analysis_results(
     }
 
 
+@router.post("/batch-analyses/{batch_analysis_id}/graph")
+def batch_relationship_graph(batch_analysis_id: int, user: User = Depends(current_user), db: Session = Depends(get_db)):
+    from app.services.batch_analysis_graph import project_and_read_batch_graph
+    batch = db.get(BatchAnalysis, batch_analysis_id)
+    if batch is None:
+        raise HTTPException(status_code=404, detail={"code": "batch_analysis_not_found", "message": "Batch analysis was not found."})
+    _assert_can_read_batch(db, batch, user)
+    try:
+        return project_and_read_batch_graph(db, batch)
+    except ValueError as exc:
+        raise HTTPException(status_code=409, detail={"code": "batch_graph_not_ready", "message": str(exc)}) from exc
+    except Exception as exc:
+        raise HTTPException(status_code=503, detail={"code": "batch_graph_unavailable", "message": "The Neo4j relationship graph is unavailable. Saved model results remain available."}) from exc
+
+
 @router.post("/batch-analyses/{batch_analysis_id}/score")
 def score_batch_analysis(
     batch_analysis_id: int,
+    historic_graph_snapshot_id: int | None = Form(default=None, gt=0),
     user: User = Depends(current_user),
     db: Session = Depends(get_db),
 ):
@@ -522,10 +630,15 @@ def score_batch_analysis(
     if batch.accepted_count == 0:
         raise HTTPException(status_code=422, detail={"code": "no_accepted_reviews", "message": "Batch has no accepted reviews to score."})
 
-    if batch.historic_graph_snapshot_id is None:
+    selected_snapshot_id = historic_graph_snapshot_id or batch.historic_graph_snapshot_id
+    if (batch.inference_run_id is not None and historic_graph_snapshot_id is not None
+            and historic_graph_snapshot_id != batch.historic_graph_snapshot_id):
+        raise HTTPException(status_code=409, detail={"code": "snapshot_already_pinned", "message": "An existing inference run cannot change its pinned historical snapshot."})
+
+    if selected_snapshot_id is None:
         raise HTTPException(status_code=422, detail={"code": "historic_graph_snapshot_not_selected", "message": "No historic graph snapshot was selected for this batch."})
 
-    snapshot = db.get(GraphSnapshot, batch.historic_graph_snapshot_id)
+    snapshot = db.get(GraphSnapshot, selected_snapshot_id)
     if snapshot is None:
         raise HTTPException(status_code=404, detail={"code": "snapshot_not_found", "message": "Graph snapshot was not found."})
     if snapshot.storage_status != "available" or not snapshot.batch_context_permitted:
@@ -564,7 +677,9 @@ def score_batch_analysis(
         db.add(run)
         db.flush()
         batch.inference_run_id = run.inference_run_id
+        batch.historic_graph_snapshot_id = selected_snapshot_id
         batch.status = "queued"
+        batch.blocking_reasons = []
         job = InductiveInferenceJob(
             inference_run_id=run.inference_run_id,
             status="queued",

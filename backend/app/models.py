@@ -289,6 +289,7 @@ class BatchAnalysis(Base):
     batch_key: Mapped[str] = mapped_column(Uuid(as_uuid=False), unique=True, nullable=False, default=lambda: str(uuid.uuid4()))
     requested_by_user_id: Mapped[int | None] = mapped_column(ForeignKey("users.user_id", ondelete="SET NULL"))
     source_system: Mapped[str] = mapped_column(String(100), nullable=False)
+    source_filename: Mapped[str | None] = mapped_column(String(255))
     historic_graph_snapshot_id: Mapped[int | None] = mapped_column(ForeignKey("graph_snapshots.graph_snapshot_id", ondelete="RESTRICT"))
     inference_run_id: Mapped[int | None] = mapped_column(ForeignKey("inference_runs.inference_run_id", ondelete="RESTRICT"), unique=True)
     upload_sha256: Mapped[str] = mapped_column(String(64), nullable=False)
@@ -339,6 +340,7 @@ class FraudPrediction(Base):
 class ReviewFeedback(Base):
     __tablename__ = "review_feedback"
     __table_args__ = (
+        Index('ix_feedback_owner_status', 'submitted_by_user_id', 'status', 'created_at'),
         CheckConstraint("feedback_type IN ('label_correction','review_quality','other')", name="ck_feedback_type"),
         CheckConstraint("status IN ('submitted','triaged','resolved','rejected')", name="ck_feedback_status"),
         CheckConstraint("ground_truth_label IS NULL OR ground_truth_label IN (0,1)", name="ck_feedback_label"),

@@ -4,7 +4,10 @@ if (!process.env.DATABASE_URL && !process.env.JWT_SECRET) {
 
 const jwt = require('jsonwebtoken');
 
-const JWT_SECRET = process.env.JWT_SECRET || 'neurograph-db-secret-key-2026';
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET || JWT_SECRET.length < 32) {
+  throw new Error('Set a random JWT_SECRET of at least 32 characters. This legacy service is not used by the deployed FastAPI application.');
+}
 
 // Middleware to authenticate JWT token
 // Supports optional auth on read-only GET endpoints (e.g. CLI curl or public preview)

@@ -82,7 +82,7 @@ def load_permitted_historic_context(db: Session, snapshot_id: int, *, split: str
         raise ValueError("historic graph snapshot is unavailable or not permitted")
     rows = db.execute(
         select(Review.review_id, Review.reviewer_id, Review.product_id,
-               Review.rating, Review.reviewed_at, Review.review_text)
+               Review.rating, Review.reviewed_at, Review.review_text, Review.source_review_key)
         .join(GraphSnapshotReview, GraphSnapshotReview.review_id == Review.review_id)
         .where(GraphSnapshotReview.graph_snapshot_id == snapshot_id,
                GraphSnapshotReview.split == split,
@@ -96,5 +96,5 @@ def load_permitted_historic_context(db: Session, snapshot_id: int, *, split: str
         if reviewed_at.tzinfo is None:
             reviewed_at = reviewed_at.replace(tzinfo=timezone.utc)
         history.append(BatchReviewInput(int(r.review_id), int(r.reviewer_id), int(r.product_id),
-                                        int(r.rating), reviewed_at, r.review_text))
+                                        int(r.rating), reviewed_at, r.review_text, r.source_review_key))
     return PermittedHistoricContext(snapshot_id, split, history)

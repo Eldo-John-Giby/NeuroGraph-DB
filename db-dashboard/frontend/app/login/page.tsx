@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '../context/AuthContext';
 import { apiRequest, getErrorMessage } from '../lib/api';
 import { LoadingSpinner } from '../components/ui';
+import BrandMark from '../components/BrandMark';
 
 interface LoginResponse {
   access_token: string;
@@ -65,17 +66,6 @@ export default function LoginPage() {
     }
   };
 
-  const handleQuickFill = (demoRole: 'ADMIN' | 'RESEARCHER') => {
-    setError(null);
-    if (demoRole === 'ADMIN') {
-      setEmail('admin@neurograph.local');
-      setPassword('Admin1234567!');
-    } else {
-      setEmail('researcher@neurograph.local');
-      setPassword('Research1234567!');
-    }
-  };
-
   if (authLoading) {
     return (
       <div className="auth-page flex min-h-screen items-center justify-center">
@@ -89,9 +79,7 @@ export default function LoginPage() {
       <div className="auth-card w-full max-w-md rounded-2xl border p-8 shadow-xl">
         {/* Brand Header */}
         <div className="mb-8 text-center">
-          <div className="auth-brand-mark mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-xl border font-bold text-xl">
-            N
-          </div>
+          <BrandMark className="auth-brand-symbol mx-auto mb-3"/>
           <h1 className="auth-title text-2xl font-bold tracking-tight">
             NeuroGraph-DB
           </h1>
@@ -165,53 +153,6 @@ export default function LoginPage() {
             )}
           </button>
         </form>
-
-        {/* Quick Demo Credentials */}
-        <div className="mt-8 rounded-xl bg-slate-950/70 p-4 border border-slate-800 text-xs text-slate-400">
-          <p className="font-semibold text-slate-300 mb-2 flex items-center gap-1.5">
-            Quick demo credentials
-          </p>
-          <p className="text-slate-400 mb-3 text-[11px] leading-relaxed">
-            Click a demo role below to automatically fill verified test credentials:
-          </p>
-          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-            <button
-              type="button"
-              onClick={() => handleQuickFill('ADMIN')}
-              className="auth-credential flex flex-col items-start gap-1 rounded-lg border p-2.5 text-left transition-colors"
-            >
-              <div className="flex items-center gap-1.5">
-                <span className="rounded bg-rose-500/20 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-rose-300 border border-rose-500/30">
-                  Admin
-                </span>
-              </div>
-              <span className="font-mono text-[11px] text-slate-300 truncate w-full">
-                admin@neurograph.local
-              </span>
-              <span className="font-mono text-[10px] text-slate-500">
-                Admin1234567!
-              </span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => handleQuickFill('RESEARCHER')}
-              className="auth-credential flex flex-col items-start gap-1 rounded-lg border p-2.5 text-left transition-colors"
-            >
-              <div className="flex items-center gap-1.5">
-                <span className="rounded bg-emerald-500/20 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-emerald-300 border border-emerald-500/30">
-                  Researcher
-                </span>
-              </div>
-              <span className="font-mono text-[11px] text-slate-300 truncate w-full">
-                researcher@neurograph.local
-              </span>
-              <span className="font-mono text-[10px] text-slate-500">
-                Research1234567!
-              </span>
-            </button>
-          </div>
-        </div>
 
         {/* Security Policy Note */}
         <p className="mt-6 text-center text-[11px] text-slate-500 leading-relaxed">

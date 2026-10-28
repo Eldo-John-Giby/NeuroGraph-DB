@@ -1,10 +1,12 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import "./workspace-refresh.css";
 import { AuthProvider } from "./context/AuthContext";
 
 export const metadata: Metadata = {
-  title: "NeuroGraph-DB Dashboard",
-  description: "Product review integrity workspace",
+  title: "NeuroGraph — Review intelligence",
+  description: "Verified graph neural network results, product review analysis, and saved evidence.",
+  icons: { icon: [{ url: '/icon.svg?v=2', type: 'image/svg+xml' }, { url: '/favicon.ico?v=2', sizes: '32x32' }], apple: '/apple-touch-icon.png' },
 };
 
 export default function RootLayout({

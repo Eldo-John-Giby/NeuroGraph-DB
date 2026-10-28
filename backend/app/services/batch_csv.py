@@ -150,6 +150,7 @@ class BatchReviewInput:
     rating: int
     reviewed_at: datetime
     review_text: str
+    source_review_key: str | None = None
 
 
 @dataclass(frozen=True)

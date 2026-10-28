@@ -17,6 +17,7 @@ import {
   Hash,
 } from 'lucide-react';
 import { apiRequest, getErrorMessage } from '../lib/api';
+import { BatchRelationshipGraph } from './BatchRelationshipGraph';
 
 export interface BatchAnalysisSummary {
   batch_analysis_id: number;
@@ -105,9 +106,11 @@ function truncateHash(hash: string, lead = 8, trail = 8): string {
 export function InductiveBatchSection({
   initialBatchId,
   showHeading = true,
+  refreshKey,
 }: {
   initialBatchId?: number;
   showHeading?: boolean;
+  refreshKey?: string;
 }) {
   const [batches, setBatches] = useState<BatchAnalysisSummary[]>([]);
   const [selectedBatchId, setSelectedBatchId] = useState<number | null>(initialBatchId ?? null);
@@ -133,18 +136,20 @@ export function InductiveBatchSection({
   };
 
   const fetchBatches = useCallback(async () => {
+    if (initialBatchId) return;
     try {
       const data = await apiRequest<{ items: BatchAnalysisSummary[] }>('/api/v1/batch-analyses?limit=20');
       const list = data.items || [];
       setBatches(list);
       if (list.length > 0 && selectedBatchId === null) {
-        setSelectedBatchId(list[0].batch_analysis_id);
+        const saved = list.find(batch => batch.accepted_count > 0);
+        setSelectedBatchId((saved || list[0]).batch_analysis_id);
       }
     } catch (err) {
-      // If no batches exist yet, that is normal
-      setBatches([]);
+      setError(getErrorMessage(err));
+      setLoading(false);
     }
-  }, [selectedBatchId]);
+  }, [selectedBatchId, initialBatchId]);
 
   const fetchBatchDetails = useCallback(async (batchId: number) => {
     setLoading(true);
@@ -152,10 +157,15 @@ export function InductiveBatchSection({
     try {
       const [batchData, resultsData] = await Promise.all([
         apiRequest<BatchAnalysisSummary>(`/api/v1/batch-analyses/${batchId}`),
-        apiRequest<{ items: BatchRowResult[] }>(`/api/v1/batch-analyses/${batchId}/results?limit=50`),
+        apiRequest<{ items: BatchRowResult[]; total: number }>(`/api/v1/batch-analyses/${batchId}/results?limit=100`),
       ]);
+      const allRows = [...(resultsData.items || [])];
+      for (let offset = 100; offset < resultsData.total; offset += 100) {
+        const page = await apiRequest<{ items: BatchRowResult[] }>(`/api/v1/batch-analyses/${batchId}/results?limit=100&offset=${offset}`);
+        allRows.push(...page.items);
+      }
       setCurrentBatch(batchData);
-      setResults(resultsData.items || []);
+      setResults(allRows);
     } catch (err) {
       setError(getErrorMessage(err));
       setCurrentBatch(null);
@@ -181,7 +191,13 @@ export function InductiveBatchSection({
     } else {
       setLoading(false);
     }
-  }, [selectedBatchId, fetchBatchDetails]);
+  }, [selectedBatchId, fetchBatchDetails, refreshKey]);
+
+  useEffect(() => {
+    if (currentBatch?.status !== 'running' || selectedBatchId === null) return;
+    const timer = setInterval(() => { void fetchBatchDetails(selectedBatchId); }, 5000);
+    return () => clearInterval(timer);
+  }, [currentBatch?.status, selectedBatchId, fetchBatchDetails]);
 
   const handleScoreBatch = async () => {
     if (!selectedBatchId) return;
@@ -240,7 +256,7 @@ export function InductiveBatchSection({
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="flex items-center gap-2">
             <span className="text-[10px] font-bold uppercase tracking-wider text-[#6366f1]">
-              Lane 3: Inductive Product CSV Assessment
+              Saved CSV analysis
             </span>
           </div>
           <div className="flex items-center gap-2">
@@ -310,6 +326,8 @@ export function InductiveBatchSection({
 
       {!loading && currentBatch && (
         <>
+          {currentBatch.status === 'running' && <div className="notice-card" role="status"><strong>Your analysis is running</strong><p>This page checks for saved results automatically. You can leave and reopen this batch from Products &amp; history.</p></div>}
+          {currentBatch.rejected_count > 0 && <section className="notice-card notice-error"><strong>{currentBatch.rejected_count} rows could not be imported</strong><p>{currentBatch.accepted_count} accepted out of {currentBatch.row_count} submitted. Rejected rows have no model predictions.</p><details><summary>Inspect import errors</summary><ul>{results.filter(row=>row.row_state==='rejected').map(row=><li key={row.row_number}>Row {row.row_number}: {row.validation_errors.map(error=>error.message||error.code).join('; ')}</li>)}</ul></details></section>}
           {/* Status Alert for Incomplete Batches */}
           {currentBatch.status === 'queued' && (
             <div className="rounded-lg border border-[#fed7aa] bg-[#fff7ed] p-4 text-xs text-[#9a3412] flex items-start justify-between gap-3">
@@ -341,6 +359,7 @@ export function InductiveBatchSection({
                 <p className="mt-0.5 text-[#9f1239]">
                   Inference failed: {currentBatch.job?.last_error || currentBatch.blocking_reasons.join(', ') || 'Worker execution error'}. No fabricated predictions were written.
                 </p>
+                {currentBatch.accepted_count > 0 && <button className="button-secondary mt-3" disabled={scoring} onClick={handleScoreBatch}>{scoring ? 'Retrying…' : 'Retry analysis'}</button>}
               </div>
             </div>
           )}
@@ -470,6 +489,8 @@ export function InductiveBatchSection({
               </div>
             </div>
           )}
+
+          {currentBatch.status === 'completed' && <BatchRelationshipGraph key={currentBatch.batch_analysis_id} batchId={currentBatch.batch_analysis_id} />}
 
           {/* Scored Reviews Table */}
           {results.length > 0 && (

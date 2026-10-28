@@ -145,6 +145,7 @@ def process_inductive_job(
                 rating=int(rev.rating),
                 reviewed_at=reviewed_at or datetime.now(timezone.utc),
                 review_text=rev.review_text or "",
+                source_review_key=rev.source_review_key,
             )
         )
 

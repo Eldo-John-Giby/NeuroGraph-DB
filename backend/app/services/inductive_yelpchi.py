@@ -33,6 +33,7 @@ if str(REPO_ROOT) not in sys.path:
 from ml.models.roberta_relation_gnn import RobertaRelationGNN
 from app.models import GraphSnapshot
 from app.services.batch_csv import BatchReviewInput, PermittedHistoricContext
+from app.services.inductive_relations import node_order, stitch_arrivals
 
 logger = logging.getLogger("neurograph.inductive_runtime")
 
@@ -233,7 +234,12 @@ class InductiveYelpChiRuntime:
                 self._hf_roberta = AutoModel.from_pretrained(model_name, revision=revision).to(self.device)
                 self._hf_roberta.eval()
             except Exception as e:
-                logger.warning("Could not initialize transformers AutoModel (%s); using deterministic offline encoding fallback.", e)
+                self._tokenizer = None
+                self._hf_roberta = None
+                raise BundleVerificationError(
+                    "The pinned RoBERTa encoder could not be loaded. No predictions were generated; "
+                    "install the text-model dependencies and make the verified model revision available."
+                ) from e
 
         if self._tokenizer is not None and self._hf_roberta is not None:
             vectors: list[torch.Tensor] = []
@@ -248,15 +254,7 @@ class InductiveYelpChiRuntime:
                 vectors.append(pooled.cpu())
             return torch.cat(vectors, dim=0)
 
-        # Deterministic offline fallback for unit tests or offline environments without HF network access
-        vectors = []
-        for text in texts:
-            h = hashlib.sha256(text.encode("utf-8")).digest()
-            rng = np.random.RandomState(int.from_bytes(h[:4], "big"))
-            vec = rng.randn(768).astype(np.float32)
-            vec = vec / (np.linalg.norm(vec) + 1e-6)
-            vectors.append(torch.from_numpy(vec))
-        return torch.stack(vectors, dim=0)
+        raise BundleVerificationError("Pinned RoBERTa encoder is unavailable; scoring is blocked.")
 
     def build_meta_features(
         self,
@@ -353,65 +351,25 @@ class InductiveYelpChiRuntime:
             )
 
         # Sort nodes chronologically
-        sorted_historic = sorted(filtered_historic, key=lambda r: (r.reviewed_at, r.review_id))
-        sorted_uploaded = sorted(uploaded_reviews, key=lambda r: (r.reviewed_at, r.review_id))
+        sorted_historic = sorted(filtered_historic, key=node_order)
+        sorted_uploaded = sorted(uploaded_reviews, key=node_order)
 
         n_hist = len(sorted_historic)
         n_up = len(sorted_uploaded)
         max_neighbors = int(self._model_config.get("max_neighbors_per_relation", 50))
 
-        # Build index lookups for fast neighbor resolution
-        hist_by_reviewer: dict[int, list[int]] = {}
-        hist_by_product_rating: dict[tuple[int, int], list[int]] = {}
-        hist_by_product: dict[int, list[int]] = {}
-
-        for h_idx, r in enumerate(sorted_historic):
-            hist_by_reviewer.setdefault(r.reviewer_id, []).append(h_idx)
-            hist_by_product_rating.setdefault((r.product_id, r.rating), []).append(h_idx)
-            hist_by_product.setdefault(r.product_id, []).append(h_idx)
-
-        # Build strictly directed historic->uploaded edges
-        rur_src, rur_tgt = [], []
-        rsr_src, rsr_tgt = [], []
-        rtr_src, rtr_tgt = [], []
-
-        per_review_neighbors: dict[int, dict[str, list[int]]] = {}
-
-        for u_idx, u_rev in enumerate(sorted_uploaded):
-            target_node = n_hist + u_idx
-            u_rev_id = u_rev.review_id
-            per_review_neighbors[u_rev_id] = {"rur": [], "rsr": [], "rtr": []}
-
-            # 1. RUR: same reviewer, historic to candidate, capped at max_neighbors
-            rur_cands = hist_by_reviewer.get(u_rev.reviewer_id, [])
-            selected_rur = rur_cands[-max_neighbors:]
-            rur_src.extend(selected_rur)
-            rur_tgt.extend([target_node] * len(selected_rur))
-            per_review_neighbors[u_rev_id]["rur"] = [sorted_historic[idx].review_id for idx in selected_rur]
-
-            # 2. RSR: same product and rating, historic to candidate, capped at max_neighbors
-            rsr_cands = hist_by_product_rating.get((u_rev.product_id, u_rev.rating), [])
-            selected_rsr = rsr_cands[-max_neighbors:]
-            rsr_src.extend(selected_rsr)
-            rsr_tgt.extend([target_node] * len(selected_rsr))
-            per_review_neighbors[u_rev_id]["rsr"] = [sorted_historic[idx].review_id for idx in selected_rsr]
-
-            # 3. RTR: same product within 30 days, historic to candidate, closest up to max_neighbors
-            prod_cands = hist_by_product.get(u_rev.product_id, [])
-            rtr_matches = []
-            for h_idx in prod_cands:
-                time_diff = abs(u_rev.reviewed_at - sorted_historic[h_idx].reviewed_at)
-                if time_diff <= timedelta(days=30):
-                    rtr_matches.append((time_diff, h_idx))
-            rtr_matches.sort(key=lambda item: (item[0], sorted_historic[item[1]].review_id))
-            selected_rtr = [idx for _, idx in rtr_matches[:max_neighbors]]
-            rtr_src.extend(selected_rtr)
-            rtr_tgt.extend([target_node] * len(selected_rtr))
-            per_review_neighbors[u_rev_id]["rtr"] = [sorted_historic[idx].review_id for idx in selected_rtr]
-
-        edge_index_rur = torch.tensor([rur_src, rur_tgt], dtype=torch.long) if rur_src else torch.zeros((2, 0), dtype=torch.long)
-        edge_index_rsr = torch.tensor([rsr_src, rsr_tgt], dtype=torch.long) if rsr_src else torch.zeros((2, 0), dtype=torch.long)
-        edge_index_rtr = torch.tensor([rtr_src, rtr_tgt], dtype=torch.long) if rtr_src else torch.zeros((2, 0), dtype=torch.long)
+        # Reuse the training-time arrival rule: earlier rows in this same file
+        # become context for later rows, without changing the frozen snapshot.
+        pairs, per_review_neighbors = stitch_arrivals(sorted_historic, sorted_uploaded, max_neighbors)
+        rur_src = [a for a, b in pairs["rur"]]
+        rur_tgt = [b for a, b in pairs["rur"]]
+        rsr_src = [a for a, b in pairs["rsr"]]
+        rsr_tgt = [b for a, b in pairs["rsr"]]
+        rtr_src = [a for a, b in pairs["rtr"]]
+        rtr_tgt = [b for a, b in pairs["rtr"]]
+        edge_index_rur = torch.tensor([rur_src, rur_tgt], dtype=torch.long)
+        edge_index_rsr = torch.tensor([rsr_src, rsr_tgt], dtype=torch.long)
+        edge_index_rtr = torch.tensor([rtr_src, rtr_tgt], dtype=torch.long)
 
         edges = {
             "rur": edge_index_rur.to(self.device),
@@ -429,37 +387,19 @@ class InductiveYelpChiRuntime:
         }
         stitched_graph_sha256 = hashlib.sha256(json.dumps(edge_hash_data, sort_keys=True).encode()).hexdigest()
 
-        # Text features for uploaded reviews
-        # If review is known in serving_graph, use precomputed RoBERTa tensor; otherwise encode in batches
+        # Database IDs are unrelated to raw benchmark IDs. Always encode the
+        # uploaded text; never reuse a tensor because an integer ID happens to match.
         uploaded_texts = [r.review_text or "" for r in sorted_uploaded]
-        uploaded_emb_list = []
-        missing_texts = []
-        missing_indices = []
-
-        for idx, r in enumerate(sorted_uploaded):
-            s_idx = self._serving_review_id_to_idx.get(str(r.review_id))
-            if s_idx is not None and self._serving_graph is not None:
-                uploaded_emb_list.append(self._serving_graph["x_text"][s_idx : s_idx + 1])
-            else:
-                uploaded_emb_list.append(None)
-                missing_texts.append(r.review_text or "")
-                missing_indices.append(idx)
-
-        if missing_texts:
-            encoded_missing = self.encode_texts(missing_texts, batch_size=32)
-            for m_idx, enc in zip(missing_indices, encoded_missing):
-                uploaded_emb_list[m_idx] = enc.unsqueeze(0)
-
-        x_text_uploaded = torch.cat(uploaded_emb_list, dim=0)
+        x_text_uploaded = self.encode_texts(uploaded_texts, batch_size=32)
 
         # Historic text embeddings from precomputed serving graph
         hist_emb_list = []
         for r in sorted_historic:
-            s_idx = self._serving_review_id_to_idx.get(str(r.review_id))
+            s_idx = self._serving_review_id_to_idx.get(r.source_review_key) if r.source_review_key else None
             if s_idx is not None and self._serving_graph is not None:
                 hist_emb_list.append(self._serving_graph["x_text"][s_idx : s_idx + 1])
             else:
-                hist_emb_list.append(torch.zeros((1, 768), dtype=torch.float32))
+                raise InsufficientContextError("Historical review lacks a verified raw-ID mapping to the selected benchmark snapshot.")
         x_text_hist = torch.cat(hist_emb_list, dim=0) if hist_emb_list else torch.zeros((0, 768), dtype=torch.float32)
 
         x_text = torch.cat([x_text_hist, x_text_uploaded], dim=0).to(self.device)
@@ -469,11 +409,11 @@ class InductiveYelpChiRuntime:
         # Historic meta features from serving graph if present, else default zero/scale
         hist_meta_list = []
         for r in sorted_historic:
-            s_idx = self._serving_review_id_to_idx.get(str(r.review_id))
+            s_idx = self._serving_review_id_to_idx.get(r.source_review_key) if r.source_review_key else None
             if s_idx is not None and self._serving_graph is not None:
                 hist_meta_list.append(self._serving_graph["x_meta"][s_idx : s_idx + 1])
             else:
-                hist_meta_list.append(torch.zeros((1, 14), dtype=torch.float32))
+                raise InsufficientContextError("Historical metadata lacks a verified raw-ID mapping to the selected benchmark snapshot.")
         x_meta_hist = torch.cat(hist_meta_list, dim=0) if hist_meta_list else torch.zeros((0, 14), dtype=torch.float32)
 
         x_meta = torch.cat([x_meta_hist, x_meta_uploaded], dim=0).to(self.device)
@@ -500,7 +440,7 @@ class InductiveYelpChiRuntime:
             neigh = per_review_neighbors.get(u_rev_id, {"rur": [], "rsr": [], "rtr": []})
             neighbor_counts = {k: len(v) for k, v in neigh.items()}
             # Union of connected historic review IDs, capped
-            all_connected = sorted(set(neigh["rur"] + neigh["rsr"] + neigh["rtr"]))[:max_neighbors]
+            all_connected = sorted(set(neigh["rur"] + neigh["rsr"] + neigh["rtr"]))
 
             # Evidence SHA256 hashes
             emb_bytes = x_text_uploaded[u_idx].cpu().numpy().tobytes()
@@ -517,7 +457,7 @@ class InductiveYelpChiRuntime:
                     attention_weights=attn,
                     graph_snapshot_id=snapshot.graph_snapshot_id,
                     relation_schema_version=expected_policy,
-                    context_cutoff_at=context_cutoff_at,
+                    context_cutoff_at=u_rev.reviewed_at,
                     neighbor_counts=neighbor_counts,
                     historic_review_ids=all_connected,
                     stitched_graph_sha256=stitched_graph_sha256,
