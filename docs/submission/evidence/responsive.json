@@ -1,0 +1,11 @@
+{
+  "desktop": {
+    "viewport": 1265,
+    "documentWidth": 1265
+  },
+  "mobile": {
+    "documentWidth": 360,
+    "heading": "Model results.Evidence you can inspect.",
+    "viewport": 360
+  }
+}

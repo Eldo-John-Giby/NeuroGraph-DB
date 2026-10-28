@@ -49,5 +49,5 @@ for t in tables:
         dd.append(f"| `{c['name']}` | {c['type']} | {'Yes' if c['nullable'] else 'No'} | {'; '.join(rules) or '-'} |")
     dd+=['','Constraints:']+[f"- {c['kind']} {c.get('expression', ', '.join(c.get('columns',[])))}" for c in t['constraints']]
     dd+=['','Indexes:']+[f"- {i['name']}: {', '.join(i['columns'])}{' (unique)' if i['unique'] else ''}" for i in t['indexes']]+['']
-(out/'DATA_DICTIONARY.md').write_text('\n'.join(dd)+'\n')
+(out/'DATA_DICTIONARY.md').write_text('\n'.join(dd).rstrip()+'\n')
 print(json.dumps({'tables':len(tables),'foreign_key_columns':sum(bool(c['foreign_keys']) for t in tables for c in t['columns']),'primary_keys_in_every_table':True}))

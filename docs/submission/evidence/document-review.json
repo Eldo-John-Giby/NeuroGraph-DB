@@ -1,0 +1,10 @@
+{
+  "date": "2026-10-29",
+  "pages": 37,
+  "visual_review": "All 37 pages inspected; two final table adjustments re-rendered and inspected; other page images are byte-identical to reviewed versions.",
+  "sha256": {
+    "NeuroGraph_DB_Final_Report.pdf": "dcb40cee5edc32dc845277a96a4659857e2ac585281ec2827f1e9aff6aa95ebc",
+    "NeuroGraph_DB_Final_Report.docx": "fcd9aaa9ea4df426005602681d51695c517a205f35556fca989e2953e90ddf72"
+  },
+  "private_identifiers_in_public_source": false
+}

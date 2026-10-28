@@ -552,4 +552,3 @@ Constraints:
 
 Indexes:
 - ix_users_role_id: role_id
-

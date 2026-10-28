@@ -1,0 +1,22 @@
+{
+  "date": "2026-10-29",
+  "production_url": "https://frontend-three-snowy-10.vercel.app",
+  "feedback_create_read_update_delete": true,
+  "admin_procedure_resolution": true,
+  "researcher_resolution_denied": true,
+  "resolved_feedback_edit_delete_locked": true,
+  "view_summary_admin_only": true,
+  "invalid_pagination_rejected": true,
+  "resolved_demo_feedback_id": 1,
+  "aggregate_view_output": {
+    "batches": 18,
+    "scored": 72,
+    "flagged": 26,
+    "products": 193,
+    "reviews": 28427,
+    "views": [
+      "vw_batch_analysis_summary",
+      "vw_product_review_summary"
+    ]
+  }
+}

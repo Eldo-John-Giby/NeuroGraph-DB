@@ -16,3 +16,7 @@ The rubric does not specify an upload portal, filename, report template or elect
 The project has 23 application tables and 37 FK columns, all represented in the complete generated ERD. Do not use the older 18-table diagrams as the final schema. PostgreSQL views/procedure/trigger are installed by migration 0007. Tests use a disposable database and do not alter production predictions.
 
 Bonus evidence covers the GitHub Actions CI pipeline and automated tests/audit logging. A provider subdomain is not presented as a custom-domain bonus. There is no configured Docker Hub account, so Docker Hub publication is not claimed. The normalized entity design includes explicitly documented physical execution/provenance redundancies; see NORMALIZATION.md for the precise boundary of the 3NF claim.
+
+## Rebuilding the local submission
+
+`scripts/build_submission_report.py --team <ignored private team JSON>` creates the editable report from REPORT.md, schema.json and screenshots. The authoring runtime requires python-docx and Pillow; native Arial fonts are used for the submitted rendering. The private team JSON is deliberately not committed. Render and visually inspect the DOCX/PDF before recording document-review.json. `scripts/package_submission.py` verifies the reviewed report hashes, archives committed source only and packages the deliverables without environment files or database exports.

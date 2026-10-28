@@ -16,5 +16,11 @@
   "database_revision": "0007_database_features",
   "table_count": 23,
   "foreign_key_columns": 37,
-  "primary_key_coverage": "all application tables"
+  "primary_key_coverage": "all application tables",
+  "clean_checkout": {
+    "passed": 73,
+    "skipped_private_bundle_tests": 12,
+    "failed": 0,
+    "includes_real_postgresql": true
+  }
 }
