@@ -3,7 +3,7 @@
 from fastapi.testclient import TestClient
 
 
-def test_verified_multimodal_status(client: TestClient, reader_token: str):
+def test_verified_multimodal_status(client: TestClient, reader_token: str, multimodal_bundle):
     headers = {"Authorization": f"Bearer {reader_token}"}
     response = client.get("/api/v1/verified-multimodal/status", headers=headers)
     assert response.status_code == 200
@@ -25,7 +25,7 @@ def test_verified_multimodal_status(client: TestClient, reader_token: str):
     assert abs(fixed["observed_fraud_score"] - fixed["expected_fraud_score"]) <= fixed["tolerance"]
 
 
-def test_verified_multimodal_predict_known_node(client: TestClient, reader_token: str):
+def test_verified_multimodal_predict_known_node(client: TestClient, reader_token: str, multimodal_bundle):
     headers = {"Authorization": f"Bearer {reader_token}"}
     response = client.post(
         "/api/v1/verified-multimodal/predict",
@@ -45,7 +45,7 @@ def test_verified_multimodal_predict_known_node(client: TestClient, reader_token
     assert pred["predicted_label"] == 0
 
 
-def test_verified_multimodal_predict_unknown_node_rejected(client: TestClient, reader_token: str):
+def test_verified_multimodal_predict_unknown_node_rejected(client: TestClient, reader_token: str, multimodal_bundle):
     headers = {"Authorization": f"Bearer {reader_token}"}
     response = client.post(
         "/api/v1/verified-multimodal/predict",
@@ -60,7 +60,7 @@ def test_verified_multimodal_predict_unknown_node_rejected(client: TestClient, r
     assert "unknown-nonexistent-review-id" in str(data["error"]["details"]) or "unknown-nonexistent-review-id" in data["error"]["message"]
 
 
-def test_verified_multimodal_results_pagination(client: TestClient, reader_token: str):
+def test_verified_multimodal_results_pagination(client: TestClient, reader_token: str, multimodal_bundle):
     headers = {"Authorization": f"Bearer {reader_token}"}
     response = client.get("/api/v1/verified-multimodal/results?limit=5&offset=0", headers=headers)
     assert response.status_code == 200

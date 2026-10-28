@@ -2,8 +2,10 @@ name: Verified application CI
 on:
   push:
     branches: [main, dev]
+    paths-ignore: ['docs/**', '**/*.md']
   pull_request:
     branches: [main, dev]
+    paths-ignore: ['docs/**', '**/*.md']
   workflow_dispatch:
 permissions:
   contents: read

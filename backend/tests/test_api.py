@@ -9,6 +9,12 @@ from app.models import (BatchAnalysis, BatchAnalysisRow, FraudPrediction, GraphS
 def test_live_and_model_status(client):
     assert client.get("/health/live").json() == {"status": "alive"}
     status = client.get("/api/v1/models/status").json()
+    if not status['verified_baseline']['available']:
+        assert status['inference_available'] is status['verified_multimodal']['available']
+        if not status['verified_multimodal']['available']:
+            assert status['status'] == 'unavailable'
+            assert status['reason'] == 'no_verified_real_model'
+        return
     assert status["status"] == "available"
     assert status["inference_available"] is True
     assert status["verified_real_model_count"] == 0
@@ -70,7 +76,10 @@ def test_verified_real_provenance_still_fails_closed_without_runtime(client, rea
 
     status = client.get("/api/v1/models/status").json()
     assert status["verified_real_model_count"] == 1
-    assert status["reason"] == "verified_yelpchi_baseline_ready"
+    expected_reason = ('verified_yelpchi_baseline_ready' if status['verified_baseline']['available'] else
+                       'verified_yelpchi_multimodal_ready' if status['verified_multimodal']['available'] else
+                       'verified_runtime_not_loaded')
+    assert status['reason'] == expected_reason
     response = client.post(
         "/api/v1/inference-runs",
         headers={"Authorization": f"Bearer {reader_token}", "Idempotency-Key": "real-provenance"},
@@ -82,7 +91,7 @@ def test_verified_real_provenance_still_fails_closed_without_runtime(client, rea
         assert session.scalar(select(func.count()).select_from(InferenceRun)) == 0
 
 
-def test_verified_baseline_serves_the_fixed_label_free_node(client, reader_token):
+def test_verified_baseline_serves_the_fixed_label_free_node(client, reader_token, baseline_bundle):
     headers = {"Authorization": f"Bearer {reader_token}"}
     status = client.get("/api/v1/verified-baseline/status", headers=headers)
     assert status.status_code == 200

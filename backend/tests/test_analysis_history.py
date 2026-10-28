@@ -57,7 +57,7 @@ def test_old_receipt_gets_filename_on_retry_without_duplicate_import(client, rea
     assert retry['reused_existing_batch']
 
 
-def test_inductive_status_uses_verified_bundle_metrics(client, reader_token):
+def test_inductive_status_uses_verified_bundle_metrics(client, reader_token, inductive_bundle):
     status = client.get('/api/v1/verified-inductive/status', headers={'Authorization': f'Bearer {reader_token}'}).json()
     assert status['available'] and status['reproduction_verified']
     assert status['evaluation_protocol'] == 'inductive_temporal_replay'

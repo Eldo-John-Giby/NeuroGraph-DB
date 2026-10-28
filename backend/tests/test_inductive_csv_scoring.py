@@ -23,7 +23,7 @@ from app.services.inductive_yelpchi import BundleVerificationError, get_inductiv
 
 
 @pytest.fixture
-def isolated_test_embeddings(monkeypatch):
+def isolated_test_embeddings(monkeypatch, inductive_bundle):
     """Stub only embedding inputs for fabricated test history; never used in serving.
 
     These tests exercise worker persistence and real classification-head attention,
@@ -341,7 +341,7 @@ def test_synthetic_model_ineligible_for_inductive_scoring(client, reader_token, 
     assert response.json()["error"]["code"] == "synthetic_model_ineligible"
 
 
-def test_insufficient_historic_context_fails_cleanly(client, reader_token, seeded_inductive_environment):
+def test_insufficient_historic_context_fails_cleanly(client, reader_token, seeded_inductive_environment, inductive_bundle):
     """When a snapshot has zero historical reviews for the training split, scoring fails with 422."""
     headers = {"Authorization": f"Bearer {reader_token}"}
     # Create an empty permitted snapshot

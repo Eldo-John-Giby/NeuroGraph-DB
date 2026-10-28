@@ -19,6 +19,27 @@ from app.models import Role, User
 from app.security import hash_password
 
 
+def require_bundle(relative):
+    manifest = Path(__file__).resolve().parents[2] / 'artifacts' / relative / 'run_manifest.json'
+    if not manifest.is_file():
+        pytest.skip('Private verified model bundle is not installed: ' + relative)
+
+
+@pytest.fixture
+def baseline_bundle():
+    require_bundle('verified_baselines/kaggle_output/neurograph-yelpchi-output/bundle')
+
+
+@pytest.fixture
+def inductive_bundle():
+    require_bundle('verified_inductive/raw_yelpchi_inductive_seed42_20261025T125837Z')
+
+
+@pytest.fixture
+def multimodal_bundle():
+    require_bundle('verified_multimodal/raw_yelpchi_multimodal_seed42_20261025T071547Z')
+
+
 @pytest.fixture()
 def client():
     engine = create_engine("sqlite+pysqlite://", connect_args={"check_same_thread": False}, poolclass=StaticPool)
