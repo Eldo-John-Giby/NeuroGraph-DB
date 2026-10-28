@@ -1,0 +1,9 @@
+{$BACKEND_DOMAIN} {
+    encode zstd gzip
+    reverse_proxy backend:8000 {
+        transport http {
+            read_timeout 600s
+            write_timeout 600s
+        }
+    }
+}

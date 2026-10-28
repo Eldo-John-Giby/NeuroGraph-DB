@@ -1,0 +1,20 @@
+{
+  "date": "2026-10-29",
+  "backend": {
+    "passed": 85,
+    "failed": 0,
+    "skipped": 0,
+    "includes_real_postgresql": true,
+    "command": "PYTHONPATH=..:. TEST_POSTGRES_URL=<empty disposable PostgreSQL database> pytest"
+  },
+  "frontend_auth": {
+    "passed": 10,
+    "failed": 0,
+    "command": "node --test tests/auth-refresh.test.cjs"
+  },
+  "frontend_production_build": "passed",
+  "database_revision": "0007_database_features",
+  "table_count": 23,
+  "foreign_key_columns": 37,
+  "primary_key_coverage": "all application tables"
+}

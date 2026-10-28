@@ -1,72 +1,78 @@
-name: CI/CD Pipeline
-
+name: Verified application CI
 on:
   push:
-    branches: [ main ]
+    branches: [main, dev]
   pull_request:
-    branches: [ main ]
-
+    branches: [main, dev]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
 jobs:
-  backend-checks:
-    name: Backend Lint & Typecheck
+  backend:
+    name: FastAPI tests and PostgreSQL database features
+    # Standard Linux runners are free on the public source repository. The private
+    # submission mirror skips hosted jobs to avoid consuming metered allowances.
+    if: github.event.repository.private == false
     runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: 'npm'
-          cache-dependency-path: db-dashboard/backend/package.json
-
-      - name: Install backend dependencies
-        run: |
-          cd db-dashboard/backend
-          npm install
-
-      - name: Generate Prisma Client
-        run: |
-          cd db-dashboard/backend
-          npx prisma generate
-
-      - name: Run Backend Syntax Verification
-        run: |
-          cd db-dashboard/backend
-          node --check server.js
-          node --check middleware/auth.js
-          node --check middleware/audit.js
-
-  frontend-checks:
-    name: Frontend Lint & Build
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: 'npm'
-          cache-dependency-path: db-dashboard/frontend/package.json
-
-      - name: Install frontend dependencies
-        run: |
-          cd db-dashboard/frontend
-          npm install
-
-      - name: Run Frontend Lint
-        run: |
-          cd db-dashboard/frontend
-          npm run lint --if-present
-
-      - name: Run Next.js Build
-        run: |
-          cd db-dashboard/frontend
-          npm run build
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:16
         env:
-          NEXT_PUBLIC_API_URL: https://neurograph-db-backend.onrender.com
+          POSTGRES_USER: ci
+          POSTGRES_PASSWORD: disposable-ci-password
+          POSTGRES_DB: neurograph_ci
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U ci -d neurograph_ci"
+          --health-interval 10s --health-timeout 5s --health-retries 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install CPU runtime and application tests
+        run: |
+          python -m pip install --index-url https://download.pytorch.org/whl/cpu 'torch>=2.6,<3'
+          python -m pip install './backend[test,deploy]'
+      - name: Run API, model-contract and PostgreSQL regressions
+        working-directory: backend
+        env:
+          PYTHONPATH: ..:.
+          OMP_NUM_THREADS: '2'
+          TEST_POSTGRES_URL: postgresql+psycopg://ci:disposable-ci-password@localhost:5432/neurograph_ci
+        run: pytest
+  frontend:
+    name: Next.js lint build and authentication tests
+    if: github.event.repository.private == false
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    defaults:
+      run:
+        working-directory: db-dashboard/frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: db-dashboard/frontend/package-lock.json
+      - run: npm ci
+      - run: node --test tests/auth-refresh.test.cjs
+      - run: npm run lint
+      - run: npm run build
+        env:
+          BACKEND_URL: https://neurograph-16-171-237-56.sslip.io
+      - run: npm audit --omit=dev --audit-level=high
+  container:
+    name: Build deployable Docker image
+    if: github.event.repository.private == false
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker build -f backend/Dockerfile -t neurograph-api:ci .
+      - run: docker run --rm neurograph-api:ci python -c "from app.main import app; assert app.title == 'NeuroGraph-DB API'"

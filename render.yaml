@@ -4,7 +4,7 @@ services:
     runtime: docker
     plan: free
     dockerfilePath: ./backend/Dockerfile
-    dockerContext: ./backend
+    dockerContext: .
     healthCheckPath: /health/live
     envVars:
       - key: DATABASE_URL

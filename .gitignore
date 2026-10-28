@@ -27,3 +27,18 @@ review_variants/
 node_modules/
 db-dashboard/backend/node_modules/
 db-dashboard/frontend/node_modules/
+.deployment/
+# Local submission identities, database exports and rendering intermediates
+.env.*
+!.env.example
+!**/.env.example
+*.dump
+*.backup
+*.pem
+*.key
+*.p12
+*.pfx
+.pytest_cache/
+tmp/
+output/
+submission-private/

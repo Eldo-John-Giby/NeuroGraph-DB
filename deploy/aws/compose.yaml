@@ -1,0 +1,90 @@
+name: neurograph
+
+services:
+  postgres:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: neurograph
+      POSTGRES_DB: neurograph
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: [CMD-SHELL, "pg_isready -U neurograph -d neurograph"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+
+  neo4j:
+    image: neo4j:5
+    restart: unless-stopped
+    environment:
+      NEO4J_AUTH: neo4j/${NEO4J_PASSWORD:?}
+      NEO4J_server_memory_heap_initial__size: 128m
+      NEO4J_server_memory_heap_max__size: 512m
+      NEO4J_server_memory_pagecache_size: 128m
+    volumes:
+      - neo4j_data:/data
+      - neo4j_logs:/logs
+    healthcheck:
+      test: [CMD-SHELL, "cypher-shell -u neo4j -p \"$${NEO4J_AUTH#*/}\" 'RETURN 1' >/dev/null 2>&1"]
+      interval: 15s
+      timeout: 10s
+      retries: 40
+      start_period: 30s
+
+  backend:
+    build:
+      context: ../..
+      dockerfile: backend/Dockerfile
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql+psycopg://neurograph:${POSTGRES_PASSWORD:?}@postgres:5432/neurograph
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY:?}
+      COOKIE_SECURE: "true"
+      CORS_ORIGINS: ${FRONTEND_ORIGIN:-https://frontend-three-snowy-10.vercel.app}
+      ARTIFACT_ROOT: /app/artifacts
+      NEO4J_URI: bolt://neo4j:7687
+      NEO4J_USERNAME: neo4j
+      NEO4J_PASSWORD: ${NEO4J_PASSWORD:?}
+      OMP_NUM_THREADS: "2"
+      MKL_NUM_THREADS: "2"
+      TOKENIZERS_PARALLELISM: "false"
+    volumes:
+      - /opt/neurograph/artifacts:/app/artifacts:ro
+      - huggingface_cache:/app/cache/huggingface
+    depends_on:
+      postgres:
+        condition: service_healthy
+      neo4j:
+        condition: service_healthy
+    healthcheck:
+      test: [CMD, python, -c, "import urllib.request; urllib.request.urlopen('http://localhost:8000/health/live', timeout=5)"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      BACKEND_DOMAIN: ${BACKEND_DOMAIN:?}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      backend:
+        condition: service_healthy
+
+volumes:
+  postgres_data:
+  neo4j_data:
+  neo4j_logs:
+  huggingface_cache:
+  caddy_data:
+  caddy_config:

@@ -10,4 +10,3 @@ export function AnalysisCard({batch}:{batch:SavedAnalysis}) {
     <div className="analysis-card-footer"><span>{batch.status==='completed' ? 'Open saved results' : batch.accepted_count ? 'Open analysis' : 'Review import errors'}</span><ArrowUpRight size={17}/></div>
   </Link>;
 }
-

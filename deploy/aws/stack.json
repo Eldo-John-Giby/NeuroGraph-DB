@@ -1,0 +1,301 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "NeuroGraph-DB defense deployment. Run only after aws_free_plan.py confirms an ACTIVE FREE account plan.",
+  "Parameters": {
+    "ImageId": {
+      "Type": "AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>",
+      "Default": "/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-x86_64"
+    },
+    "InstanceType": {
+      "Type": "String",
+      "Default": "m7i-flex.large",
+      "AllowedValues": [
+        "m7i-flex.large"
+      ]
+    },
+    "AvailabilityZone": {
+      "Type": "AWS::EC2::AvailabilityZone::Name"
+    }
+  },
+  "Resources": {
+    "Vpc": {
+      "Type": "AWS::EC2::VPC",
+      "Properties": {
+        "CidrBlock": "10.82.0.0/16",
+        "EnableDnsSupport": true,
+        "EnableDnsHostnames": true,
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": "neurograph-defense"
+          }
+        ]
+      }
+    },
+    "Gateway": {
+      "Type": "AWS::EC2::InternetGateway"
+    },
+    "GatewayAttachment": {
+      "Type": "AWS::EC2::VPCGatewayAttachment",
+      "Properties": {
+        "InternetGatewayId": {
+          "Ref": "Gateway"
+        },
+        "VpcId": {
+          "Ref": "Vpc"
+        }
+      }
+    },
+    "Subnet": {
+      "Type": "AWS::EC2::Subnet",
+      "Properties": {
+        "VpcId": {
+          "Ref": "Vpc"
+        },
+        "CidrBlock": "10.82.1.0/24",
+        "AvailabilityZone": {
+          "Ref": "AvailabilityZone"
+        },
+        "MapPublicIpOnLaunch": true
+      }
+    },
+    "RouteTable": {
+      "Type": "AWS::EC2::RouteTable",
+      "Properties": {
+        "VpcId": {
+          "Ref": "Vpc"
+        }
+      }
+    },
+    "Route": {
+      "Type": "AWS::EC2::Route",
+      "DependsOn": "GatewayAttachment",
+      "Properties": {
+        "RouteTableId": {
+          "Ref": "RouteTable"
+        },
+        "DestinationCidrBlock": "0.0.0.0/0",
+        "GatewayId": {
+          "Ref": "Gateway"
+        }
+      }
+    },
+    "SubnetRoutes": {
+      "Type": "AWS::EC2::SubnetRouteTableAssociation",
+      "Properties": {
+        "RouteTableId": {
+          "Ref": "RouteTable"
+        },
+        "SubnetId": {
+          "Ref": "Subnet"
+        }
+      }
+    },
+    "WebSecurityGroup": {
+      "Type": "AWS::EC2::SecurityGroup",
+      "Properties": {
+        "GroupDescription": "Public HTTPS and HTTP; databases and SSH remain private",
+        "VpcId": {
+          "Ref": "Vpc"
+        },
+        "SecurityGroupIngress": [
+          {
+            "IpProtocol": "tcp",
+            "FromPort": 80,
+            "ToPort": 80,
+            "CidrIp": "0.0.0.0/0"
+          },
+          {
+            "IpProtocol": "tcp",
+            "FromPort": 443,
+            "ToPort": 443,
+            "CidrIp": "0.0.0.0/0"
+          }
+        ]
+      }
+    },
+    "Artifacts": {
+      "Type": "AWS::S3::Bucket",
+      "Properties": {
+        "BucketName": {
+          "Fn::Sub": "neurograph-defense-${AWS::AccountId}-${AWS::Region}"
+        },
+        "BucketEncryption": {
+          "ServerSideEncryptionConfiguration": [
+            {
+              "ServerSideEncryptionByDefault": {
+                "SSEAlgorithm": "AES256"
+              }
+            }
+          ]
+        },
+        "PublicAccessBlockConfiguration": {
+          "BlockPublicAcls": true,
+          "BlockPublicPolicy": true,
+          "IgnorePublicAcls": true,
+          "RestrictPublicBuckets": true
+        },
+        "LifecycleConfiguration": {
+          "Rules": [
+            {
+              "Id": "AbortIncompleteUploads",
+              "Status": "Enabled",
+              "AbortIncompleteMultipartUpload": {
+                "DaysAfterInitiation": 1
+              }
+            }
+          ]
+        }
+      }
+    },
+    "RuntimeRole": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "RoleName": {
+          "Fn::Sub": "neurograph-defense-runtime-${AWS::Region}"
+        },
+        "AssumeRolePolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "ec2.amazonaws.com"
+              },
+              "Action": "sts:AssumeRole"
+            }
+          ]
+        },
+        "ManagedPolicyArns": [
+          "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
+        ],
+        "Policies": [
+          {
+            "PolicyName": "ReadDeploymentBundle",
+            "PolicyDocument": {
+              "Version": "2012-10-17",
+              "Statement": [
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "s3:GetObject"
+                  ],
+                  "Resource": {
+                    "Fn::Sub": "${Artifacts.Arn}/*"
+                  }
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "s3:GetBucketLocation"
+                  ],
+                  "Resource": {
+                    "Fn::GetAtt": [
+                      "Artifacts",
+                      "Arn"
+                    ]
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "RuntimeProfile": {
+      "Type": "AWS::IAM::InstanceProfile",
+      "Properties": {
+        "Roles": [
+          {
+            "Ref": "RuntimeRole"
+          }
+        ]
+      }
+    },
+    "Server": {
+      "Type": "AWS::EC2::Instance",
+      "DependsOn": [
+        "Route",
+        "SubnetRoutes"
+      ],
+      "Properties": {
+        "ImageId": {
+          "Ref": "ImageId"
+        },
+        "InstanceType": {
+          "Ref": "InstanceType"
+        },
+        "IamInstanceProfile": {
+          "Ref": "RuntimeProfile"
+        },
+        "NetworkInterfaces": [
+          {
+            "DeviceIndex": "0",
+            "AssociatePublicIpAddress": true,
+            "SubnetId": {
+              "Ref": "Subnet"
+            },
+            "GroupSet": [
+              {
+                "Ref": "WebSecurityGroup"
+              }
+            ]
+          }
+        ],
+        "MetadataOptions": {
+          "HttpTokens": "required",
+          "HttpEndpoint": "enabled",
+          "HttpPutResponseHopLimit": 1
+        },
+        "BlockDeviceMappings": [
+          {
+            "DeviceName": "/dev/xvda",
+            "Ebs": {
+              "VolumeSize": 50,
+              "VolumeType": "gp3",
+              "Encrypted": true,
+              "DeleteOnTermination": true
+            }
+          }
+        ],
+        "UserData": {
+          "Fn::Base64": "#!/bin/bash\nset -euo pipefail\ndnf install -y docker awscli-2\nsystemctl enable --now docker\nmkdir -p /opt/neurograph /usr/local/lib/docker/cli-plugins\ncd /opt/neurograph\ncurl --fail --location --retry 5 --output docker-compose-linux-x86_64 https://github.com/docker/compose/releases/download/v2.39.4/docker-compose-linux-x86_64\ncurl --fail --location --retry 5 --output docker-compose-linux-x86_64.sha256 https://github.com/docker/compose/releases/download/v2.39.4/docker-compose-linux-x86_64.sha256\nsha256sum --check docker-compose-linux-x86_64.sha256\ninstall -m 0755 docker-compose-linux-x86_64 /usr/local/lib/docker/cli-plugins/docker-compose\nrm docker-compose-linux-x86_64 docker-compose-linux-x86_64.sha256\nif ! swapon --show | grep -q /swapfile; then\n  fallocate -l 2G /swapfile\n  chmod 600 /swapfile\n  mkswap /swapfile\n  swapon /swapfile\n  echo '/swapfile none swap sw 0 0' >> /etc/fstab\nfi\ntouch /opt/neurograph/host-ready\n"
+        },
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": "neurograph-defense"
+          },
+          {
+            "Key": "Project",
+            "Value": "NeuroGraph-DB"
+          },
+          {
+            "Key": "AccountPlan",
+            "Value": "FREE"
+          }
+        ]
+      }
+    }
+  },
+  "Outputs": {
+    "InstanceId": {
+      "Value": {
+        "Ref": "Server"
+      }
+    },
+    "PublicIp": {
+      "Value": {
+        "Fn::GetAtt": [
+          "Server",
+          "PublicIp"
+        ]
+      }
+    },
+    "ArtifactsBucket": {
+      "Value": {
+        "Ref": "Artifacts"
+      }
+    }
+  }
+}

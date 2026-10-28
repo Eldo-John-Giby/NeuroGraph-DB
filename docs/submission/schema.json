@@ -1,0 +1,2828 @@
+{
+  "table_count": 23,
+  "tables": [
+    {
+      "name": "audit_logs",
+      "columns": [
+        {
+          "name": "audit_log_id",
+          "type": "BIGINT",
+          "nullable": false,
+          "pk": true,
+          "foreign_keys": [],
+          "default": null
+        },
+        {
+          "name": "actor_user_id",
+          "type": "BIGINT",
+          "nullable": true,
+          "pk": false,
+          "foreign_keys": [
+            "users.user_id"
+          ],
+          "default": null
+        },
+        {
+          "name": "action",
+          "type": "VARCHAR(100)",
+          "nullable": false,
+          "pk": false,
+          "foreign_keys": [],
+          "default": null
+        },
+        {
+          "name": "entity_type",
+          "type": "VARCHAR(100)",
+          "nullable": false,
+          "pk": false,
+          "foreign_keys": [],
+          "default": null
+        },
+        {
+          "name": "entity_key",
+          "type": "VARCHAR(200)",
+          "nullable": false,
+          "pk": false,
+          "foreign_keys": [],
+          "default": null
+        },
+        {
+          "name": "before_data",
+          "type": "JSONB",
+          "nullable": true,
+          "pk": false,
+          "foreign_keys": [],
+          "default": null
+        },
+        {
+          "name": "after_data",
+          "type": "JSONB",
+          "nullable": true,
+          "pk": false,
+          "foreign_keys": [],
+          "default": null
+        },
+        {
+          "name": "request_id",
+          "type": "UUID",
+          "nullable": true,
+          "pk": false,
+          "foreign_keys": [],
+          "default": null
+        },
+        {
+          "name": "created_at",
+          "type": "TIMESTAMP WITH TIME ZONE",
+          "nullable": false,
+          "pk": false,
+          "foreign_keys": [],
+          "default": "now()"
+        }
+      ],
+      "constraints": [],
+      "indexes": []
+    },
+    {
+      "name": "batch_analyses",
+      "columns": [
+        {
+          "name": "batch_analysis_id",
+          "type": "BIGINT",
+          "nullable": false,
+          "pk": true,
+          "foreign_keys": [],
+          "default": null
+        },
+        {
+          "name": "batch_key",
+          "type": "UUID",
+          "nullable": false,
+          "pk": false,
+          "foreign_keys": [],
+          "default": null
+        },
+        {
+          "name": "requested_by_user_id",
+          "type": "BIGINT",
+          "nullable": true,
+          "pk": false,
+          "foreign_keys": [
+            "users.user_id"
+          ],
+          "default": null
+        },
+        {
+          "name": "source_system",
+          "type": "VARCHAR(100)",
+          "nullable": false,
+          "pk": false,
+          "foreign_keys": [],
+          "default": null
+        },
+        {
+          "name": "source_filename",
+          "type": "VARCHAR(255)",
+          "nullable": true,
+          "pk": false,
+          "foreign_keys": [],
+          "default": null
+        },
+        {
+          "name": "historic_graph_snapshot_id",
+          "type": "BIGINT",
+          "nullable": true,
+          "pk": false,
+          "foreign_keys": [
+            "graph_snapshots.graph_snapshot_id"
+          ],
+          "default": null
+        },
+        {
+          "name": "inference_run_id",
+          "type": "BIGINT",
+          "nullable": true,
+          "pk": false,
+          "foreign_keys": [
+            "inference_runs.inference_run_id"
+          ],
+          "default": null
+        },
+        {
+          "name": "upload_sha256",
+          "type": "VARCHAR(64)",
+          "nullable": false,
+          "pk": false,
+          "foreign_keys": [],
+          "default": null
+        },
+        {
+          "name": "row_count",
+          "type": "INTEGER",
+          "nullable": false,
+          "pk": false,
+          "foreign_keys": [],
+          "default": null
+        },
+        {
+          "name": "accepted_count",
+          "type": "INTEGER",
+          "nullable": false,
+          "pk": false,
+          "foreign_keys": [],
+          "default": null
+        },
+        {
+          "name": "rejected_count",
+          "type": "INTEGER",
+          "nullable": false,
+          "pk": false,
+          "foreign_keys": [],
+          "default": null
+        },
+        {
+          "name": "status",
+          "type": "VARCHAR(30)",
+          "nullable": false,
+          "pk": false,
+          "foreign_keys": [],
+          "default": null
+        },
+        {
+          "name": "blocking_reasons",
+          "type": "JSONB",
+          "nullable": false,
+          "pk": false,
+          "foreign_keys": [],
+          "default": "'[]'"
+        },
+        {
+          "name": "created_at",
+          "type": "TIMESTAMP WITH TIME ZONE",
+          "nullable": false,
+          "pk": false,
+          "foreign_keys": [],
+          "default": "now()"
+        }
+      ],
+      "constraints": [
+        {
+          "kind": "UNIQUE",
+          "name": null,
+          "columns": [
+            "batch_key"
+          ]
+        },
+        {
+          "kind": "CHECK",
+          "name": "ck_batch_analysis_counts",
+          "expression": "row_count >= 0 AND accepted_count >= 0 AND rejected_count >= 0 AND row_count = accepted_count + rejected_count"
+        },
+        {
+          "kind": "UNIQUE",
+          "name": null,
+          "columns": [
+            "inference_run_id"
+          ]
+        },
+        {
+          "kind": "CHECK",
+          "name": "ck_batch_analysis_status",
+          "expression": "status IN ('blocked','queued','running','completed','partial','failed','validation_failed')"
+        }
+      ],
+      "indexes": [
+        {
+          "name": "ix_batch_analyses_created",
+          "columns": [
+            "created_at"
+          ],
+          "unique": false
+        }
+      ]
+    },
+    {
+      "name": "batch_analysis_rows",
+      "columns": [
+        {
+          "name": "batch_analysis_row_id",
+          "type": "BIGINT",
+          "nullable": false,
+          "pk": true,
+          "foreign_keys": [],
+          "default": null
+        },
+        {
+          "name": "batch_analysis_id",
+          "type": "BIGINT",
+          "nullable": false,
+          "pk": false,
+          "foreign_keys": [
+            "batch_analyses.batch_analysis_id"
+          ],
+          "default": null
+        },
+        {
+          "name": "row_number",
+          "type": "INTEGER",
+          "nullable": false,
+          "pk": false,
+          "foreign_keys": [],
+          "default": null
+        },
+        {
+          "name": "uploaded_review_key",
+          "type": "VARCHAR(255)",
+          "nullable": true,
+          "pk": false,
+          "foreign_keys": [],
+          "default": null
+        },
+        {
+          "name": "row_state",
+          "type": "VARCHAR(20)",
+          "nullable": false,
+          "pk": false,
+          "foreign_keys": [],
+          "default": null
+        },
+        {
+          "name": "review_id",
+          "type": "BIGINT",
+          "nullable": true,
+          "pk": false,
+          "foreign_keys": [
+            "reviews.review_id"
+          ],
+          "default": null
+        },
+        {
+          "name": "validation_errors",
+          "type": "JSONB",
+          "nullable": false,
+          "pk": false,
+          "foreign_keys": [],
+          "default": "'[]'"
+        },
+        {
+          "name": "created_at",
+          "type": "TIMESTAMP WITH TIME ZONE",
+          "nullable": false,
+          "pk": false,
+          "foreign_keys": [],
+          "default": "now()"
+        }
+      ],
+      "constraints": [
+        {
+          "kind": "CHECK",
+          "name": "ck_batch_analysis_row_review",
+          "expression": "(row_state = 'accepted' AND review_id IS NOT NULL) OR (row_state = 'rejected' AND review_id IS NULL)"
+        },
+        {
+          "kind": "UNIQUE",
+          "name": "uq_batch_analysis_row_number",
+          "columns": [
+            "batch_analysis_id",
+            "row_number"
+          ]
+        },
+        {
+          "kind": "CHECK",
+          "name": "ck_batch_analysis_row_state",
+          "expression": "row_state IN ('accepted','rejected')"
+        }
+      ],
+      "indexes": [
+        {
+          "name": "ix_batch_analysis_rows_state",
+          "columns": [
+            "batch_analysis_id",
+            "row_state",
+            "row_number"
+          ],
+          "unique": false
+        }
+      ]
+    },
+    {
+      "name": "fraud_predictions",
+      "columns": [
+        {
+          "name": "fraud_prediction_id",
+          "type": "BIGINT",
+          "nullable": false,
+          "pk": true,
+          "foreign_keys": [],
+          "default": null
+        },
+        {
+          "name": "inference_run_id",
+          "type": "BIGINT",
+          "nullable": false,
+          "pk": false,
+          "foreign_keys": [
+            "inference_runs.inference_run_id"
+          ],
+          "default": null
+        },
+        {
+          "name": "review_id",
+          "type": "BIGINT",
+          "nullable": false,
+          "pk": false,
+          "foreign_keys": [
+            "reviews.review_id"
+          ],
+          "default": null
+        },
+        {
+          "name": "risk_score",
+          "type": "NUMERIC(9, 8)",
+          "nullable": false,
+          "pk": false,
+          "foreign_keys": [],
+          "default": null
+        },
+        {
+          "name": "predicted_label",
+          "type": "SMALLINT",
+          "nullable": false,
+          "pk": false,
+          "foreign_keys": [],
+          "default": null
+        },
+        {
+          "name": "attention_weights",
+          "type": "JSONB",
+          "nullable": true,
+          "pk": false,
+          "foreign_keys": [],
+          "default": null
+        },
+        {
+          "name": "graph_status",
+          "type": "VARCHAR(30)",
+          "nullable": false,
+          "pk": false,
+          "foreign_keys": [],
+          "default": "not_requested"
+        },
+        {
+          "name": "created_at",
+          "type": "TIMESTAMP WITH TIME ZONE",
+          "nullable": false,
+          "pk": false,
+          "foreign_keys": [],
+          "default": "now()"
+        }
+      ],
+      "constraints": [
+        {
+          "kind": "UNIQUE",
+          "name": "uq_predictions_run_review",
+          "columns": [
+            "inference_run_id",
+            "review_id"
+          ]
+        },
+        {
+          "kind": "CHECK",
+          "name": "ck_prediction_label",
+          "expression": "predicted_label IN (0,1)"
+        },
+        {
+          "kind": "CHECK",
+          "name": "ck_prediction_score",
+          "expression": "risk_score BETWEEN 0 AND 1"
+        }
+      ],
+      "indexes": [
+        {
+          "name": "ix_predictions_review_created",
+          "columns": [
+            "review_id",
+            "created_at"
+          ],
+          "unique": false
+        }
+      ]
+    },
+    {
+      "name": "graph_snapshot_reviews",
+      "columns": [
+        {
+          "name": "graph_snapshot_id",
+          "type": "BIGINT",
+          "nullable": false,
+          "pk": true,
+          "foreign_keys": [
+            "graph_snapshots.graph_snapshot_id"
+          ],
+          "default": null
+        },
+        {
+          "name": "review_id",
+          "type": "BIGINT",
+          "nullable": false,
+          "pk": true,
+          "foreign_keys": [
+            "reviews.review_id"
+          ],
+          "default": null
+        },
+        {
+          "name": "split",
+          "type": "VARCHAR(20)",
+          "nullable": false,
+          "pk": false,
+          "foreign_keys": [],
+          "default": null
+        }
+      ],
+      "constraints": [
+        {
+          "kind": "CHECK",
+          "name": "ck_snapshot_review_split",
+          "expression": "split IN ('train','validation','test')"
+        }
+      ],
+      "indexes": [
+        {
+          "name": "ix_snapshot_review_split",
+          "columns": [
+            "graph_snapshot_id",
+            "split",
+            "review_id"
+          ],
+          "unique": false
+        }
+      ]
+    },
+    {
+      "name": "graph_snapshots",
+      "columns": [
+        {
+          "name": "graph_snapshot_id",
+          "type": "BIGINT",
+          "nullable": false,
+          "pk": true,
+          "foreign_keys": [],
+          "default": null
+        },
+        {
+          "name": "snapshot_key",
+          "type": "VARCHAR(160)",
+          "nullable": false,
+          "pk": false,
+          "foreign_keys": [],
+          "default": null
+        },
+        {
+          "name": "dataset_name",
+          "type": "VARCHAR(200)",
+          "nullable": false,
+          "pk": false,
+          "foreign_keys": [],
+          "default": null
+        },
+        {
+          "name": "dataset_sha256",
+          "type": "VARCHAR(64)",
+          "nullable": false,
+          "pk": false,
+          "foreign_keys": [],
+          "default": null
+        },
+        {
+          "name": "artifact_uri",
+          "type": "TEXT",
+          "nullable": false,
+          "pk": false,
+          "foreign_keys": [],
+          "default": null
+        },
+        {
+          "name": "artifact_sha256",
+          "type": "VARCHAR(64)",
+          "nullable": false,
+          "pk": false,
+          "foreign_keys": [],
+          "default": null
+        },
+        {
+          "name": "graph_builder_version",
+          "type": "VARCHAR(160)",
+          "nullable": false,
+          "pk": false,
+          "foreign_keys": [],
+          "default": null
+        },
+        {
+          "name": "relation_schema_version",
+          "type": "VARCHAR(120)",
+          "nullable": false,
+          "pk": false,
+          "foreign_keys": [],
+          "default": null
+        },
+        {
+          "name": "split_protocol_key",
+          "type": "VARCHAR(160)",
+          "nullable": false,
+          "pk": false,
+          "foreign_keys": [],
+          "default": null
+        },
+        {
+          "name": "node_count",
+          "type": "BIGINT",
+          "nullable": false,
+          "pk": false,
+          "foreign_keys": [],
+          "default": null
+        },
+        {
+          "name": "edge_counts",
+          "type": "JSONB",
+          "nullable": false,
+          "pk": false,
+          "foreign_keys": [],
+          "default": "'{}'"
+        },
+        {
+          "name": "created_at",
+          "type": "TIMESTAMP WITH TIME ZONE",
+          "nullable": false,
+          "pk": false,
+          "foreign_keys": [],
+          "default": "now()"
+        },
+        {
+          "name": "storage_status",
+          "type": "VARCHAR(30)",
+          "nullable": false,
+          "pk": false,
+          "foreign_keys": [],
+          "default": "available"
+        },
+        {
+          "name": "batch_context_permitted",
+          "type": "BOOLEAN",
+          "nullable": false,
+          "pk": false,
+          "foreign_keys": [],
+          "default": "false"
+        },
+        {
+          "name": "context_scope_key",
+          "type": "VARCHAR(160)",
+          "nullable": true,
+          "pk": false,
+          "foreign_keys": [],
+          "default": null
+        },
+        {
+          "name": "provenance",
+          "type": "VARCHAR(30)",
+          "nullable": false,
+          "pk": false,
+          "foreign_keys": [],
+          "default": "real"
+        }
+      ],
+      "constraints": [
+        {
+          "kind": "CHECK",
+          "name": "ck_snapshot_context_scope",
+          "expression": "NOT batch_context_permitted OR (context_scope_key IS NOT NULL AND length(trim(context_scope_key)) > 0)"
+        },
+        {
+          "kind": "UNIQUE",
+          "name": null,
+          "columns": [
+            "artifact_sha256"
+          ]
+        },
+        {
+          "kind": "CHECK",
+          "name": "ck_graph_artifact_sha256",
+          "expression": "length(artifact_sha256) = 64 AND lower(artifact_sha256) = artifact_sha256"
+        },
+        {
+          "kind": "CHECK",
+          "name": "ck_graph_snapshot_storage",
+          "expression": "storage_status IN ('available','archived','missing')"
+        },
+        {
+          "kind": "CHECK",
+          "name": "ck_graph_dataset_sha256",
+          "expression": "length(dataset_sha256) = 64 AND lower(dataset_sha256) = dataset_sha256"
+        },
+        {
+          "kind": "CHECK",
+          "name": "ck_graph_snapshot_provenance",
+          "expression": "provenance IN ('real','synthetic_demo')"
+        },
+        {
+          "kind": "UNIQUE",
+          "name": null,
+          "columns": [
+            "snapshot_key"
+          ]
+        },
+        {
+          "kind": "CHECK",
+          "name": "ck_graph_snapshot_node_count",
+          "expression": "node_count >= 0"
+        }
+      ],
+      "indexes": []
+    },
+    {
+      "name": "graph_sync_jobs",
+      "columns": [
+        {
+          "name": "graph_sync_job_id",
+          "type": "BIGINT",
+          "nullable": false,
+          "pk": true,
+          "foreign_keys": [],
+          "default": null
+        },
+        {
+          "name": "operation",
+          "type": "VARCHAR(40)",
+          "nullable": false,
+          "pk": false,
+          "foreign_keys": [],
+          "default": null
+        },
+        {
+          "name": "review_id",
+          "type": "BIGINT",
+          "nullable": true,
+          "pk": false,
+          "foreign_keys": [
+            "reviews.review_id"
+          ],
+          "default": null
+        },
+        {
+          "name": "graph_snapshot_id",
+          "type": "BIGINT",
+          "nullable": true,
+          "pk": false,
+          "foreign_keys": [
+            "graph_snapshots.graph_snapshot_id"
+          ],
+          "default": null
+        },
+        {
+          "name": "requested_by_user_id",
+          "type": "BIGINT",
+          "nullable": true,
+          "pk": false,
+          "foreign_keys": [
+            "users.user_id"
+          ],
+          "default": null
+        },
+        {
+          "name": "source_event_key",
+          "type": "VARCHAR(200)",
+          "nullable": true,
+          "pk": false,
+          "foreign_keys": [],
+          "default": null
+        },
+        {
+          "name": "idempotency_key",
+          "type": "VARCHAR(200)",
+          "nullable": true,
+          "pk": false,
+          "foreign_keys": [],
+          "default": null
+        },
+        {
+          "name": "status",
+          "type": "VARCHAR(30)",
+          "nullable": false,
+          "pk": false,
+          "foreign_keys": [],
+          "default": "queued"
+        },
+        {
+          "name": "attempt_count",
+          "type": "INTEGER",
+          "nullable": false,
+          "pk": false,
+          "foreign_keys": [],
+          "default": "0"
+        },
+        {
+          "name": "max_attempts",
+          "type": "INTEGER",
+          "nullable": false,
+          "pk": false,
+          "foreign_keys": [],
+          "default": "5"
+        },
+        {
+          "name": "next_attempt_at",
+          "type": "TIMESTAMP WITH TIME ZONE",
+          "nullable": true,
+          "pk": false,
+          "foreign_keys": [],
+          "default": null
+        },
+        {
+          "name": "created_at",
+          "type": "TIMESTAMP WITH TIME ZONE",
+          "nullable": false,
+          "pk": false,
+          "foreign_keys": [],
+          "default": "now()"
+        },
+        {
+          "name": "started_at",
+          "type": "TIMESTAMP WITH TIME ZONE",
+          "nullable": true,
+          "pk": false,
+          "foreign_keys": [],
+          "default": null
+        },
+        {
+          "name": "completed_at",
+          "type": "TIMESTAMP WITH TIME ZONE",
+          "nullable": true,
+          "pk": false,
+          "foreign_keys": [],
+          "default": null
+        },
+        {
+          "name": "last_error_code",
+          "type": "VARCHAR(100)",
+          "nullable": true,
+          "pk": false,
+          "foreign_keys": [],
+          "default": null
+        },
+        {
+          "name": "last_error",
+          "type": "TEXT",
+          "nullable": true,
+          "pk": false,
+          "foreign_keys": [],
+          "default": null
+        },
+        {
+          "name": "updated_at",
+          "type": "TIMESTAMP WITH TIME ZONE",
+          "nullable": false,
+          "pk": false,
+          "foreign_keys": [],
+          "default": "now()"
+        }
+      ],
+      "constraints": [
+        {
+          "kind": "CHECK",
+          "name": "ck_graph_job_status",
+          "expression": "status IN ('queued','running','succeeded','retry_wait','failed','cancelled')"
+        },
+        {
+          "kind": "CHECK",
+          "name": "ck_graph_job_max_attempts",
+          "expression": "max_attempts > 0"
+        },
+        {
+          "kind": "UNIQUE",
+          "name": "uq_graph_job_user_idempotency",
+          "columns": [
+            "requested_by_user_id",
+            "idempotency_key"
+          ]
+        },
+        {
+          "kind": "CHECK",
+          "name": "ck_graph_job_scope",
+          "expression": "(operation IN ('review_upsert','review_delete') AND review_id IS NOT NULL AND graph_snapshot_id IS NULL) OR (operation = 'snapshot_rebuild' AND review_id IS NULL AND graph_snapshot_id IS NOT NULL)"
+        },
+        {
+          "kind": "UNIQUE",
+          "name": "uq_graph_job_source_event",
+          "columns": [
+            "source_event_key"
+          ]
+        },
+        {
+          "kind": "CHECK",
+          "name": "ck_graph_job_idempotency_owner",
+          "expression": "idempotency_key IS NULL OR requested_by_user_id IS NOT NULL"
+        },
+        {
+          "kind": "CHECK",
+          "name": "ck_graph_job_attempt_count",
+          "expression": "attempt_count >= 0"
+        }
+      ],
+      "indexes": [
+        {
+          "name": "ix_graph_jobs_due",
+          "columns": [
+            "status",
+            "next_attempt_at"
+          ],
+          "unique": false
+        }
+      ]
+    },
+    {
+      "name": "inductive_inference_jobs",
+      "columns": [
+        {
+          "name": "job_id",
+          "type": "BIGINT",
+          "nullable": false,
+          "pk": true,
+          "foreign_keys": [],
+          "default": null
+        },
+        {
+          "name": "inference_run_id",
+          "type": "BIGINT",
+          "nullable": false,
+          "pk": false,
+          "foreign_keys": [
+            "inference_runs.inference_run_id"
+          ],
+          "default": null
+        },
+        {
+          "name": "status",
+          "type": "VARCHAR(30)",
+          "nullable": false,
+          "pk": false,
+          "foreign_keys": [],
+          "default": "queued"
+        },
+        {
+          "name": "worker_id",
+          "type": "VARCHAR(160)",
+          "nullable": true,
+          "pk": false,
+          "foreign_keys": [],
+          "default": null
+        },
+        {
+          "name": "lease_token",
+          "type": "VARCHAR(160)",
+          "nullable": true,
+          "pk": false,
+          "foreign_keys": [],
+          "default": null
+        },
+        {
+          "name": "lease_expires_at",
+          "type": "TIMESTAMP WITH TIME ZONE",
+          "nullable": true,
+          "pk": false,
+          "foreign_keys": [],
+          "default": null
+        },
+        {
+          "name": "attempt_count",
+          "type": "INTEGER",
+          "nullable": false,
+          "pk": false,
+          "foreign_keys": [],
+          "default": "0"
+        },
+        {
+          "name": "max_attempts",
+          "type": "INTEGER",
+          "nullable": false,
+          "pk": false,
+          "foreign_keys": [],
+          "default": "5"
+        },
+        {
+          "name": "priority",
+          "type": "INTEGER",
+          "nullable": false,
+          "pk": false,
+          "foreign_keys": [],
+          "default": "100"
+        },
+        {
+          "name": "next_attempt_at",
+          "type": "TIMESTAMP WITH TIME ZONE",
+          "nullable": true,
+          "pk": false,
+          "foreign_keys": [],
+          "default": null
+        },
+        {
+          "name": "started_at",
+          "type": "TIMESTAMP WITH TIME ZONE",
+          "nullable": true,
+          "pk": false,
+          "foreign_keys": [],
+          "default": null
+        },
+        {
+          "name": "completed_at",
+          "type": "TIMESTAMP WITH TIME ZONE",
+          "nullable": true,
+          "pk": false,
+          "foreign_keys": [],
+          "default": null
+        },
+        {
+          "name": "last_error_code",
+          "type": "VARCHAR(100)",
+          "nullable": true,
+          "pk": false,
+          "foreign_keys": [],
+          "default": null
+        },
+        {
+          "name": "last_error",
+          "type": "TEXT",
+          "nullable": true,
+          "pk": false,
+          "foreign_keys": [],
+          "default": null
+        },
+        {
+          "name": "provenance",
+          "type": "VARCHAR(30)",
+          "nullable": false,
+          "pk": false,
+          "foreign_keys": [
+            "inference_runs.provenance"
+          ],
+          "default": "real"
+        },
+        {
+          "name": "created_at",
+          "type": "TIMESTAMP WITH TIME ZONE",
+          "nullable": false,
+          "pk": false,
+          "foreign_keys": [],
+          "default": "now()"
+        },
+        {
+          "name": "updated_at",
+          "type": "TIMESTAMP WITH TIME ZONE",
+          "nullable": false,
+          "pk": false,
+          "foreign_keys": [],
+          "default": "now()"
+        }
+      ],
+      "constraints": [
+        {
+          "kind": "CHECK",
+          "name": "ck_inductive_job_status",
+          "expression": "status IN ('queued','running','succeeded','retry_wait','failed','cancelled')"
+        },
+        {
+          "kind": "CHECK",
+          "name": "ck_inductive_job_attempt_count",
+          "expression": "attempt_count >= 0"
+        },
+        {
+          "kind": "CHECK",
+          "name": "ck_inductive_job_max_attempts",
+          "expression": "max_attempts > 0"
+        },
+        {
+          "kind": "CHECK",
+          "name": "ck_inductive_job_provenance",
+          "expression": "provenance IN ('real','synthetic_demo')"
+        },
+        {
+          "kind": "UNIQUE",
+          "name": "uq_inductive_job_run",
+          "columns": [
+            "inference_run_id"
+          ]
+        },
+        {
+          "kind": "UNIQUE",
+          "name": null,
+          "columns": [
+            "inference_run_id"
+          ]
+        }
+      ],
+      "indexes": [
+        {
+          "name": "ix_inductive_jobs_due",
+          "columns": [
+            "status",
+            "next_attempt_at"
+          ],
+          "unique": false
+        },
+        {
+          "name": "ix_inductive_jobs_lease",
+          "columns": [
+            "status",
+            "lease_expires_at"
+          ],
+          "unique": false
+        }
+      ]
+    },
+    {
+      "name": "inductive_prediction_evidence",
+      "columns": [
+        {
+          "name": "evidence_id",
+          "type": "BIGINT",
+          "nullable": false,
+          "pk": true,
+          "foreign_keys": [],
+          "default": null
+        },
+        {
+          "name": "fraud_prediction_id",
+          "type": "BIGINT",
+          "nullable": false,
+          "pk": false,
+          "foreign_keys": [
+            "fraud_predictions.fraud_prediction_id"
+          ],
+          "default": null
+        },
+        {
+          "name": "graph_snapshot_id",
+          "type": "BIGINT",
+          "nullable": false,
+          "pk": false,
+          "foreign_keys": [
+            "graph_snapshots.graph_snapshot_id"
+          ],
+          "default": null
+        },
+        {
+          "name": "relation_schema_version",
+          "type": "VARCHAR(120)",
+          "nullable": false,
+          "pk": false,
+          "foreign_keys": [],
+          "default": null
+        },
+        {
+          "name": "context_cutoff_at",
+          "type": "TIMESTAMP WITH TIME ZONE",
+          "nullable": false,
+          "pk": false,
+          "foreign_keys": [],
+          "default": null
+        },
+        {
+          "name": "neighbor_counts",
+          "type": "JSONB",
+          "nullable": false,
+          "pk": false,
+          "foreign_keys": [],
+          "default": "'{}'"
+        },
+        {
+          "name": "historic_review_ids",
+          "type": "JSONB",
+          "nullable": false,
+          "pk": false,
+          "foreign_keys": [],
+          "default": "'[]'"
+        },
+        {
+          "name": "stitched_graph_sha256",
+          "type": "VARCHAR(64)",
+          "nullable": false,
+          "pk": false,
+          "foreign_keys": [],
+          "default": null
+        },
+        {
+          "name": "input_feature_sha256",
+          "type": "VARCHAR(64)",
+          "nullable": false,
+          "pk": false,
+          "foreign_keys": [],
+          "default": null
+        },
+        {
+          "name": "embedding_sha256",
+          "type": "VARCHAR(64)",
+          "nullable": false,
+          "pk": false,
+          "foreign_keys": [],
+          "default": null
+        },
+        {
+          "name": "bundle_manifest_sha256",
+          "type": "VARCHAR(64)",
+          "nullable": false,
+          "pk": false,
+          "foreign_keys": [],
+          "default": null
+        },
+        {
+          "name": "provenance",
+          "type": "VARCHAR(30)",
+          "nullable": false,
+          "pk": false,
+          "foreign_keys": [],
+          "default": "real"
+        },
+        {
+          "name": "created_at",
+          "type": "TIMESTAMP WITH TIME ZONE",
+          "nullable": false,
+          "pk": false,
+          "foreign_keys": [],
+          "default": "now()"
+        }
+      ],
+      "constraints": [
+        {
+          "kind": "UNIQUE",
+          "name": "uq_inductive_evidence_prediction",
+          "columns": [
+            "fraud_prediction_id"
+          ]
+        },
+        {
+          "kind": "CHECK",
+          "name": "ck_inductive_evidence_provenance",
+          "expression": "provenance IN ('real','synthetic_demo')"
+        },
+        {
+          "kind": "CHECK",
+          "name": "ck_inductive_stitched_graph_sha256",
+          "expression": "length(stitched_graph_sha256) = 64 AND lower(stitched_graph_sha256) = stitched_graph_sha256"
+        },
+        {
+          "kind": "CHECK",
+          "name": "ck_inductive_bundle_manifest_sha256",
+          "expression": "length(bundle_manifest_sha256) = 64 AND lower(bundle_manifest_sha256) = bundle_manifest_sha256"
+        },
+        {
+          "kind": "UNIQUE",
+          "name": null,
+          "columns": [
+            "fraud_prediction_id"
+          ]
+        },
+        {
+          "kind": "CHECK",
+          "name": "ck_inductive_embedding_sha256",
+          "expression": "length(embedding_sha256) = 64 AND lower(embedding_sha256) = embedding_sha256"
+        },
+        {
+          "kind": "CHECK",
+          "name": "ck_inductive_input_feature_sha256",
+          "expression": "length(input_feature_sha256) = 64 AND lower(input_feature_sha256) = input_feature_sha256"
+        }
+      ],
+      "indexes": [
+        {
+          "name": "ix_inductive_evidence_cutoff",
+          "columns": [
+            "context_cutoff_at"
+          ],
+          "unique": false
+        },
+        {
+          "name": "ix_inductive_evidence_snapshot",
+          "columns": [
+            "graph_snapshot_id"
+          ],
+          "unique": false
+        }
+      ]
+    },
+    {
+      "name": "inference_runs",
+      "columns": [
+        {
+          "name": "inference_run_id",
+          "type": "BIGINT",
+          "nullable": false,
+          "pk": true,
+          "foreign_keys": [],
+          "default": null
+        },
+        {
+          "name": "run_key",
+          "type": "UUID",
+          "nullable": false,
+          "pk": false,
+          "foreign_keys": [],
+          "default": null
+        },
+        {
+          "name": "model_version_id",
+          "type": "BIGINT",
+          "nullable": false,
+          "pk": false,
+          "foreign_keys": [
+            "model_versions.model_version_id",
+            "model_versions.model_version_id"
+          ],
+          "default": null
+        },
+        {
+          "name": "provenance",
+          "type": "VARCHAR(30)",
+          "nullable": false,
+          "pk": false,
+          "foreign_keys": [
+            "model_versions.provenance"
+          ],
+          "default": "real"
+        },
+        {
+          "name": "graph_snapshot_id",
+          "type": "BIGINT",
+          "nullable": false,
+          "pk": false,
+          "foreign_keys": [
+            "graph_snapshots.graph_snapshot_id"
+          ],
+          "default": null
+        },
+        {
+          "name": "requested_by_user_id",
+          "type": "BIGINT",
+          "nullable": true,
+          "pk": false,
+          "foreign_keys": [
+            "users.user_id"
+          ],
+          "default": null
+        },
+        {
+          "name": "idempotency_key",
+          "type": "VARCHAR(200)",
+          "nullable": true,
+          "pk": false,
+          "foreign_keys": [],
+          "default": null
+        },
+        {
+          "name": "threshold",
+          "type": "NUMERIC(8, 7)",
+          "nullable": false,
+          "pk": false,
+          "foreign_keys": [],
+          "default": null
+        },
+        {
+          "name": "status",
+          "type": "VARCHAR(30)",
+          "nullable": false,
+          "pk": false,
+          "foreign_keys": [],
+          "default": "queued"
+        },
+        {
+          "name": "requested_count",
+          "type": "INTEGER",
+          "nullable": false,
+          "pk": false,
+          "foreign_keys": [],
+          "default": null
+        },
+        {
+          "name": "completed_count",
+          "type": "INTEGER",
+          "nullable": false,
+          "pk": false,
+          "foreign_keys": [],
+          "default": "0"
+        },
+        {
+          "name": "created_at",
+          "type": "TIMESTAMP WITH TIME ZONE",
+          "nullable": false,
+          "pk": false,
+          "foreign_keys": [],
+          "default": "now()"
+        },
+        {
+          "name": "completed_at",
+          "type": "TIMESTAMP WITH TIME ZONE",
+          "nullable": true,
+          "pk": false,
+          "foreign_keys": [],
+          "default": null
+        }
+      ],
+      "constraints": [
+        {
+          "kind": "UNIQUE",
+          "name": "uq_inference_run_id_prov",
+          "columns": [
+            "inference_run_id",
+            "provenance"
+          ]
+        },
+        {
+          "kind": "CHECK",
+          "name": "ck_inference_threshold",
+          "expression": "threshold BETWEEN 0 AND 1"
+        },
+        {
+          "kind": "CHECK",
+          "name": "ck_inference_counts",
+          "expression": "requested_count > 0 AND completed_count >= 0 AND completed_count <= requested_count"
+        },
+        {
+          "kind": "CHECK",
+          "name": "ck_inference_status",
+          "expression": "status IN ('queued','running','completed','failed','cancelled')"
+        },
+        {
+          "kind": "CHECK",
+          "name": "ck_inference_idempotency_owner",
+          "expression": "idempotency_key IS NULL OR requested_by_user_id IS NOT NULL"
+        },
+        {
+          "kind": "UNIQUE",
+          "name": "uq_inference_user_idempotency",
+          "columns": [
+            "requested_by_user_id",
+            "idempotency_key"
+          ]
+        },
+        {
+          "kind": "UNIQUE",
+          "name": null,
+          "columns": [
+            "run_key"
+          ]
+        }
+      ],
+      "indexes": []
+    },
+    {
+      "name": "model_versions",
+      "columns": [
+        {
+          "name": "model_version_id",
+          "type": "BIGINT",
+          "nullable": false,
+          "pk": true,
+          "foreign_keys": [],
+          "default": null
+        },
+        {
+          "name": "version_key",
+          "type": "VARCHAR(160)",
+          "nullable": false,
+          "pk": false,
+          "foreign_keys": [],
+          "default": null
+        },
+        {
+          "name": "model_name",
+          "type": "VARCHAR(100)",
+          "nullable": false,
+          "pk": false,
+          "foreign_keys": [],
+          "default": null
+        },
+        {
+          "name": "architecture_version",
+          "type": "VARCHAR(100)",
+          "nullable": false,
+          "pk": false,
+          "foreign_keys": [],
+          "default": null
+        },
+        {
+          "name": "architecture_config",
+          "type": "JSONB",
+          "nullable": false,
+          "pk": false,
+          "foreign_keys": [],
+          "default": "'{}'"
+        },
+        {
+          "name": "config_sha256",
+          "type": "VARCHAR(64)",
+          "nullable": false,
+          "pk": false,
+          "foreign_keys": [],
+          "default": null
+        },
+        {
+          "name": "checkpoint_uri",
+          "type": "TEXT",
+          "nullable": true,
+          "pk": false,
+          "foreign_keys": [],
+          "default": null
+        },
+        {
+          "name": "checkpoint_sha256",
+          "type": "VARCHAR(64)",
+          "nullable": true,
+          "pk": false,
+          "foreign_keys": [],
+          "default": null
+        },
+        {
+          "name": "preprocessing_version_id",
+          "type": "BIGINT",
+          "nullable": false,
+          "pk": false,
+          "foreign_keys": [
+            "preprocessing_versions.preprocessing_version_id"
+          ],
+          "default": null
+        },
+        {
+          "name": "input_contract_version",
+          "type": "VARCHAR(100)",
+          "nullable": false,
+          "pk": false,
+          "foreign_keys": [],
+          "default": null
+        },
+        {
+          "name": "supported_inference_mode",
+          "type": "VARCHAR(50)",
+          "nullable": false,
+          "pk": false,
+          "foreign_keys": [],
+          "default": "known_node_only"
+        },
+        {
+          "name": "recommended_threshold",
+          "type": "NUMERIC(8, 7)",
+          "nullable": true,
+          "pk": false,
+          "foreign_keys": [],
+          "default": null
+        },
+        {
+          "name": "threshold_source",
+          "type": "TEXT",
+          "nullable": true,
+          "pk": false,
+          "foreign_keys": [],
+          "default": null
+        },
+        {
+          "name": "lifecycle_status",
+          "type": "VARCHAR(30)",
+          "nullable": false,
+          "pk": false,
+          "foreign_keys": [],
+          "default": "unavailable"
+        },
+        {
+          "name": "provenance",
+          "type": "VARCHAR(30)",
+          "nullable": false,
+          "pk": false,
+          "foreign_keys": [],
+          "default": "real"
+        },
+        {
+          "name": "verification_at",
+          "type": "TIMESTAMP WITH TIME ZONE",
+          "nullable": true,
+          "pk": false,
+          "foreign_keys": [],
+          "default": null
+        },
+        {
+          "name": "created_at",
+          "type": "TIMESTAMP WITH TIME ZONE",
+          "nullable": false,
+          "pk": false,
+          "foreign_keys": [],
+          "default": "now()"
+        }
+      ],
+      "constraints": [
+        {
+          "kind": "CHECK",
+          "name": "ck_mv_demo_not_verified",
+          "expression": "provenance = 'real' OR lifecycle_status <> 'verified'"
+        },
+        {
+          "kind": "UNIQUE",
+          "name": null,
+          "columns": [
+            "version_key"
+          ]
+        },
+        {
+          "kind": "CHECK",
+          "name": "ck_model_threshold",
+          "expression": "recommended_threshold IS NULL OR recommended_threshold BETWEEN 0 AND 1"
+        },
+        {
+          "kind": "UNIQUE",
+          "name": null,
+          "columns": [
+            "checkpoint_sha256"
+          ]
+        },
+        {
+          "kind": "CHECK",
+          "name": "ck_model_lifecycle",
+          "expression": "lifecycle_status IN ('unavailable','registered','verified','retired')"
+        },
+        {
+          "kind": "CHECK",
+          "name": "ck_model_checkpoint_sha256",
+          "expression": "checkpoint_sha256 IS NULL OR (length(checkpoint_sha256) = 64 AND lower(checkpoint_sha256) = checkpoint_sha256)"
+        },
+        {
+          "kind": "CHECK",
+          "name": "ck_mv_prov",
+          "expression": "provenance IN ('real','synthetic_demo')"
+        },
+        {
+          "kind": "UNIQUE",
+          "name": "uq_mv_id_prov",
+          "columns": [
+            "model_version_id",
+            "provenance"
+          ]
+        },
+        {
+          "kind": "CHECK",
+          "name": "ck_model_inference_mode",
+          "expression": "supported_inference_mode IN ('known_node_only', 'inductive_batch_v1')"
+        },
+        {
+          "kind": "CHECK",
+          "name": "ck_model_config_sha256",
+          "expression": "length(config_sha256) = 64 AND lower(config_sha256) = config_sha256"
+        },
+        {
+          "kind": "CHECK",
+          "name": "ck_model_verified_requirements",
+          "expression": "lifecycle_status <> 'verified' OR (checkpoint_uri IS NOT NULL AND checkpoint_sha256 IS NOT NULL AND recommended_threshold IS NOT NULL AND threshold_source IS NOT NULL AND verification_at IS NOT NULL)"
+        }
+      ],
+      "indexes": [
+        {
+          "name": "ix_model_versions_model_name",
+          "columns": [
+            "model_name"
+          ],
+          "unique": false
+        },
+        {
+          "name": "ix_model_versions_preprocessing_version_id",
+          "columns": [
+            "preprocessing_version_id"
+          ],
+          "unique": false
+        }
+      ]
+    },
+    {
+      "name": "preprocessing_versions",
+      "columns": [
+        {
+          "name": "preprocessing_version_id",
+          "type": "BIGINT",
+          "nullable": false,
+          "pk": true,
+          "foreign_keys": [],
+          "default": null
+        },
+        {
+          "name": "version_key",
+          "type": "VARCHAR(160)",
+          "nullable": false,
+          "pk": false,
+          "foreign_keys": [],
+          "default": null
+        },
+        {
+          "name": "preprocessing_sha256",
+          "type": "VARCHAR(64)",
+          "nullable": false,
+          "pk": false,
+          "foreign_keys": [],
+          "default": null
+        },
+        {
+          "name": "preprocessing_config",
+          "type": "JSONB",
+          "nullable": false,
+          "pk": false,
+          "foreign_keys": [],
+          "default": "'{}'"
+        },
+        {
+          "name": "code_revision",
+          "type": "VARCHAR(160)",
+          "nullable": false,
+          "pk": false,
+          "foreign_keys": [],
+          "default": null
+        },
+        {
+          "name": "lifecycle_status",
+          "type": "VARCHAR(30)",
+          "nullable": false,
+          "pk": false,
+          "foreign_keys": [],
+          "default": "registered"
+        },
+        {
+          "name": "created_at",
+          "type": "TIMESTAMP WITH TIME ZONE",
+          "nullable": false,
+          "pk": false,
+          "foreign_keys": [],
+          "default": "now()"
+        },
+        {
+          "name": "verified_at",
+          "type": "TIMESTAMP WITH TIME ZONE",
+          "nullable": true,
+          "pk": false,
+          "foreign_keys": [],
+          "default": null
+        }
+      ],
+      "constraints": [
+        {
+          "kind": "UNIQUE",
+          "name": null,
+          "columns": [
+            "preprocessing_sha256"
+          ]
+        },
+        {
+          "kind": "CHECK",
+          "name": "ck_preprocessing_status",
+          "expression": "lifecycle_status IN ('registered','verified','retired','unavailable')"
+        },
+        {
+          "kind": "UNIQUE",
+          "name": null,
+          "columns": [
+            "version_key"
+          ]
+        },
+        {
+          "kind": "CHECK",
+          "name": "ck_preprocessing_sha256",
+          "expression": "length(preprocessing_sha256) = 64 AND lower(preprocessing_sha256) = preprocessing_sha256"
+        }
+      ],
+      "indexes": []
+    },
+    {
+      "name": "products",
+      "columns": [
+        {
+          "name": "product_id",
+          "type": "BIGINT",
+          "nullable": false,
+          "pk": true,
+          "foreign_keys": [],
+          "default": null
+        },
+        {
+          "name": "source_system",
+          "type": "VARCHAR(100)",
+          "nullable": false,
+          "pk": false,
+          "foreign_keys": [],
+          "default": null
+        },
+        {
+          "name": "external_product_key",
+          "type": "VARCHAR(255)",
+          "nullable": false,
+          "pk": false,
+          "foreign_keys": [],
+          "default": null
+        },
+        {
+          "name": "display_name",
+          "type": "VARCHAR(500)",
+          "nullable": true,
+          "pk": false,
+          "foreign_keys": [],
+          "default": null
+        },
+        {
+          "name": "created_at",
+          "type": "TIMESTAMP WITH TIME ZONE",
+          "nullable": false,
+          "pk": false,
+          "foreign_keys": [],
+          "default": "now()"
+        }
+      ],
+      "constraints": [
+        {
+          "kind": "UNIQUE",
+          "name": "uq_products_source_key",
+          "columns": [
+            "source_system",
+            "external_product_key"
+          ]
+        }
+      ],
+      "indexes": []
+    },
+    {
+      "name": "review_feedback",
+      "columns": [
+        {
+          "name": "feedback_id",
+          "type": "BIGINT",
+          "nullable": false,
+          "pk": true,
+          "foreign_keys": [],
+          "default": null
+        },
+        {
+          "name": "review_id",
+          "type": "BIGINT",
+          "nullable": false,
+          "pk": false,
+          "foreign_keys": [
+            "reviews.review_id"
+          ],
+          "default": null
+        },
+        {
+          "name": "submitted_by_user_id",
+          "type": "BIGINT",
+          "nullable": true,
+          "pk": false,
+          "foreign_keys": [
+            "users.user_id"
+          ],
+          "default": null
+        },
+        {
+          "name": "feedback_type",
+          "type": "VARCHAR(40)",
+          "nullable": false,
+          "pk": false,
+          "foreign_keys": [],
+          "default": null
+        },
+        {
+          "name": "ground_truth_label",
+          "type": "SMALLINT",
+          "nullable": true,
+          "pk": false,
+          "foreign_keys": [],
+          "default": null
+        },
+        {
+          "name": "comment",
+          "type": "TEXT",
+          "nullable": true,
+          "pk": false,
+          "foreign_keys": [],
+          "default": null
+        },
+        {
+          "name": "idempotency_key",
+          "type": "VARCHAR(200)",
+          "nullable": true,
+          "pk": false,
+          "foreign_keys": [],
+          "default": null
+        },
+        {
+          "name": "status",
+          "type": "VARCHAR(30)",
+          "nullable": false,
+          "pk": false,
+          "foreign_keys": [],
+          "default": "submitted"
+        },
+        {
+          "name": "created_at",
+          "type": "TIMESTAMP WITH TIME ZONE",
+          "nullable": false,
+          "pk": false,
+          "foreign_keys": [],
+          "default": "now()"
+        }
+      ],
+      "constraints": [
+        {
+          "kind": "CHECK",
+          "name": "ck_feedback_type",
+          "expression": "feedback_type IN ('label_correction','review_quality','other')"
+        },
+        {
+          "kind": "CHECK",
+          "name": "ck_feedback_label",
+          "expression": "ground_truth_label IS NULL OR ground_truth_label IN (0,1)"
+        },
+        {
+          "kind": "CHECK",
+          "name": "ck_feedback_idempotency_owner",
+          "expression": "idempotency_key IS NULL OR submitted_by_user_id IS NOT NULL"
+        },
+        {
+          "kind": "UNIQUE",
+          "name": "uq_feedback_user_idempotency",
+          "columns": [
+            "submitted_by_user_id",
+            "idempotency_key"
+          ]
+        },
+        {
+          "kind": "CHECK",
+          "name": "ck_feedback_status",
+          "expression": "status IN ('submitted','triaged','resolved','rejected')"
+        }
+      ],
+      "indexes": [
+        {
+          "name": "ix_feedback_owner_status",
+          "columns": [
+            "submitted_by_user_id",
+            "status",
+            "created_at"
+          ],
+          "unique": false
+        }
+      ]
+    },
+    {
+      "name": "review_variants",
+      "columns": [
+        {
+          "name": "review_variant_id",
+          "type": "BIGINT",
+          "nullable": false,
+          "pk": true,
+          "foreign_keys": [],
+          "default": null
+        },
+        {
+          "name": "review_id",
+          "type": "BIGINT",
+          "nullable": false,
+          "pk": false,
+          "foreign_keys": [
+            "reviews.review_id"
+          ],
+          "default": null
+        },
+        {
+          "name": "variant_key",
+          "type": "VARCHAR(160)",
+          "nullable": false,
+          "pk": false,
+          "foreign_keys": [],
+          "default": null
+        },
+        {
+          "name": "variant_type",
+          "type": "VARCHAR(80)",
+          "nullable": false,
+          "pk": false,
+          "foreign_keys": [],
+          "default": null
+        },
+        {
+          "name": "variant_text",
+          "type": "TEXT",
+          "nullable": true,
+          "pk": false,
+          "foreign_keys": [],
+          "default": null
+        },
+        {
+          "name": "review_metadata",
+          "type": "JSONB",
+          "nullable": false,
+          "pk": false,
+          "foreign_keys": [],
+          "default": "'{}'"
+        },
+        {
+          "name": "created_at",
+          "type": "TIMESTAMP WITH TIME ZONE",
+          "nullable": false,
+          "pk": false,
+          "foreign_keys": [],
+          "default": "now()"
+        }
+      ],
+      "constraints": [
+        {
+          "kind": "UNIQUE",
+          "name": "uq_review_variants_key",
+          "columns": [
+            "review_id",
+            "variant_key"
+          ]
+        }
+      ],
+      "indexes": []
+    },
+    {
+      "name": "reviewers",
+      "columns": [
+        {
+          "name": "reviewer_id",
+          "type": "BIGINT",
+          "nullable": false,
+          "pk": true,
+          "foreign_keys": [],
+          "default": null
+        },
+        {
+          "name": "source_system",
+          "type": "VARCHAR(100)",
+          "nullable": false,
+          "pk": false,
+          "foreign_keys": [],
+          "default": null
+        },
+        {
+          "name": "external_reviewer_key",
+          "type": "VARCHAR(255)",
+          "nullable": false,
+          "pk": false,
+          "foreign_keys": [],
+          "default": null
+        },
+        {
+          "name": "created_at",
+          "type": "TIMESTAMP WITH TIME ZONE",
+          "nullable": false,
+          "pk": false,
+          "foreign_keys": [],
+          "default": "now()"
+        }
+      ],
+      "constraints": [
+        {
+          "kind": "UNIQUE",
+          "name": "uq_reviewers_source_key",
+          "columns": [
+            "source_system",
+            "external_reviewer_key"
+          ]
+        }
+      ],
+      "indexes": []
+    },
+    {
+      "name": "reviews",
+      "columns": [
+        {
+          "name": "review_id",
+          "type": "BIGINT",
+          "nullable": false,
+          "pk": true,
+          "foreign_keys": [],
+          "default": null
+        },
+        {
+          "name": "source_system",
+          "type": "VARCHAR(100)",
+          "nullable": true,
+          "pk": false,
+          "foreign_keys": [],
+          "default": null
+        },
+        {
+          "name": "source_review_key",
+          "type": "VARCHAR(255)",
+          "nullable": true,
+          "pk": false,
+          "foreign_keys": [],
+          "default": null
+        },
+        {
+          "name": "reviewer_id",
+          "type": "BIGINT",
+          "nullable": true,
+          "pk": false,
+          "foreign_keys": [
+            "reviewers.reviewer_id"
+          ],
+          "default": null
+        },
+        {
+          "name": "product_id",
+          "type": "BIGINT",
+          "nullable": true,
+          "pk": false,
+          "foreign_keys": [
+            "products.product_id"
+          ],
+          "default": null
+        },
+        {
+          "name": "submitted_by_user_id",
+          "type": "BIGINT",
+          "nullable": true,
+          "pk": false,
+          "foreign_keys": [
+            "users.user_id"
+          ],
+          "default": null
+        },
+        {
+          "name": "rating",
+          "type": "SMALLINT",
+          "nullable": true,
+          "pk": false,
+          "foreign_keys": [],
+          "default": null
+        },
+        {
+          "name": "reviewed_at",
+          "type": "TIMESTAMP WITH TIME ZONE",
+          "nullable": true,
+          "pk": false,
+          "foreign_keys": [],
+          "default": null
+        },
+        {
+          "name": "review_text",
+          "type": "TEXT",
+          "nullable": true,
+          "pk": false,
+          "foreign_keys": [],
+          "default": null
+        },
+        {
+          "name": "ground_truth_label",
+          "type": "SMALLINT",
+          "nullable": true,
+          "pk": false,
+          "foreign_keys": [],
+          "default": null
+        },
+        {
+          "name": "label_source",
+          "type": "VARCHAR(255)",
+          "nullable": true,
+          "pk": false,
+          "foreign_keys": [],
+          "default": null
+        },
+        {
+          "name": "created_at",
+          "type": "TIMESTAMP WITH TIME ZONE",
+          "nullable": false,
+          "pk": false,
+          "foreign_keys": [],
+          "default": "now()"
+        },
+        {
+          "name": "updated_at",
+          "type": "TIMESTAMP WITH TIME ZONE",
+          "nullable": false,
+          "pk": false,
+          "foreign_keys": [],
+          "default": "now()"
+        }
+      ],
+      "constraints": [
+        {
+          "kind": "CHECK",
+          "name": "ck_reviews_rating",
+          "expression": "rating IS NULL OR rating BETWEEN 1 AND 5"
+        },
+        {
+          "kind": "CHECK",
+          "name": "ck_reviews_ground_truth",
+          "expression": "ground_truth_label IS NULL OR ground_truth_label IN (0, 1)"
+        },
+        {
+          "kind": "CHECK",
+          "name": "ck_reviews_source_pair",
+          "expression": "(source_system IS NULL) = (source_review_key IS NULL)"
+        }
+      ],
+      "indexes": [
+        {
+          "name": "ix_reviews_product_date",
+          "columns": [
+            "product_id",
+            "reviewed_at"
+          ],
+          "unique": false
+        },
+        {
+          "name": "ix_reviews_product_id",
+          "columns": [
+            "product_id"
+          ],
+          "unique": false
+        },
+        {
+          "name": "ix_reviews_reviewer_date",
+          "columns": [
+            "reviewer_id",
+            "reviewed_at"
+          ],
+          "unique": false
+        },
+        {
+          "name": "ix_reviews_reviewer_id",
+          "columns": [
+            "reviewer_id"
+          ],
+          "unique": false
+        },
+        {
+          "name": "ix_reviews_submitted_by_user_id",
+          "columns": [
+            "submitted_by_user_id"
+          ],
+          "unique": false
+        },
+        {
+          "name": "uq_reviews_source_pair",
+          "columns": [
+            "source_system",
+            "source_review_key"
+          ],
+          "unique": true
+        }
+      ]
+    },
+    {
+      "name": "roles",
+      "columns": [
+        {
+          "name": "role_id",
+          "type": "BIGINT",
+          "nullable": false,
+          "pk": true,
+          "foreign_keys": [],
+          "default": null
+        },
+        {
+          "name": "role_key",
+          "type": "VARCHAR(40)",
+          "nullable": false,
+          "pk": false,
+          "foreign_keys": [],
+          "default": null
+        },
+        {
+          "name": "display_name",
+          "type": "VARCHAR(120)",
+          "nullable": false,
+          "pk": false,
+          "foreign_keys": [],
+          "default": null
+        },
+        {
+          "name": "description",
+          "type": "TEXT",
+          "nullable": true,
+          "pk": false,
+          "foreign_keys": [],
+          "default": null
+        },
+        {
+          "name": "created_at",
+          "type": "TIMESTAMP WITH TIME ZONE",
+          "nullable": false,
+          "pk": false,
+          "foreign_keys": [],
+          "default": "now()"
+        }
+      ],
+      "constraints": [
+        {
+          "kind": "UNIQUE",
+          "name": null,
+          "columns": [
+            "role_key"
+          ]
+        }
+      ],
+      "indexes": []
+    },
+    {
+      "name": "session_tokens",
+      "columns": [
+        {
+          "name": "session_token_id",
+          "type": "UUID",
+          "nullable": false,
+          "pk": true,
+          "foreign_keys": [],
+          "default": null
+        },
+        {
+          "name": "user_id",
+          "type": "BIGINT",
+          "nullable": false,
+          "pk": false,
+          "foreign_keys": [
+            "users.user_id"
+          ],
+          "default": null
+        },
+        {
+          "name": "access_jti_hash",
+          "type": "VARCHAR(64)",
+          "nullable": false,
+          "pk": false,
+          "foreign_keys": [],
+          "default": null
+        },
+        {
+          "name": "refresh_token_hash",
+          "type": "VARCHAR(64)",
+          "nullable": false,
+          "pk": false,
+          "foreign_keys": [],
+          "default": null
+        },
+        {
+          "name": "created_at",
+          "type": "TIMESTAMP WITH TIME ZONE",
+          "nullable": false,
+          "pk": false,
+          "foreign_keys": [],
+          "default": "now()"
+        },
+        {
+          "name": "last_used_at",
+          "type": "TIMESTAMP WITH TIME ZONE",
+          "nullable": true,
+          "pk": false,
+          "foreign_keys": [],
+          "default": null
+        },
+        {
+          "name": "access_expires_at",
+          "type": "TIMESTAMP WITH TIME ZONE",
+          "nullable": false,
+          "pk": false,
+          "foreign_keys": [],
+          "default": null
+        },
+        {
+          "name": "refresh_expires_at",
+          "type": "TIMESTAMP WITH TIME ZONE",
+          "nullable": false,
+          "pk": false,
+          "foreign_keys": [],
+          "default": null
+        },
+        {
+          "name": "revoked_at",
+          "type": "TIMESTAMP WITH TIME ZONE",
+          "nullable": true,
+          "pk": false,
+          "foreign_keys": [],
+          "default": null
+        },
+        {
+          "name": "replaced_by_session_id",
+          "type": "UUID",
+          "nullable": true,
+          "pk": false,
+          "foreign_keys": [
+            "session_tokens.session_token_id"
+          ],
+          "default": null
+        }
+      ],
+      "constraints": [
+        {
+          "kind": "UNIQUE",
+          "name": null,
+          "columns": [
+            "refresh_token_hash"
+          ]
+        },
+        {
+          "kind": "UNIQUE",
+          "name": null,
+          "columns": [
+            "access_jti_hash"
+          ]
+        },
+        {
+          "kind": "CHECK",
+          "name": "ck_session_access_expiry",
+          "expression": "access_expires_at > created_at AND access_expires_at <= refresh_expires_at"
+        },
+        {
+          "kind": "CHECK",
+          "name": "ck_session_refresh_expiry",
+          "expression": "refresh_expires_at > created_at"
+        }
+      ],
+      "indexes": [
+        {
+          "name": "ix_session_tokens_active",
+          "columns": [
+            "user_id",
+            "refresh_expires_at"
+          ],
+          "unique": false
+        },
+        {
+          "name": "ix_session_tokens_user_id",
+          "columns": [
+            "user_id"
+          ],
+          "unique": false
+        }
+      ]
+    },
+    {
+      "name": "synthetic_campaign_members",
+      "columns": [
+        {
+          "name": "synthetic_campaign_member_id",
+          "type": "BIGINT",
+          "nullable": false,
+          "pk": true,
+          "foreign_keys": [],
+          "default": null
+        },
+        {
+          "name": "synthetic_campaign_id",
+          "type": "BIGINT",
+          "nullable": false,
+          "pk": false,
+          "foreign_keys": [
+            "synthetic_campaigns.synthetic_campaign_id"
+          ],
+          "default": null
+        },
+        {
+          "name": "reviewer_id",
+          "type": "BIGINT",
+          "nullable": false,
+          "pk": false,
+          "foreign_keys": [
+            "reviewers.reviewer_id"
+          ],
+          "default": null
+        },
+        {
+          "name": "membership_type",
+          "type": "VARCHAR(30)",
+          "nullable": false,
+          "pk": false,
+          "foreign_keys": [],
+          "default": null
+        },
+        {
+          "name": "provenance",
+          "type": "VARCHAR(30)",
+          "nullable": false,
+          "pk": false,
+          "foreign_keys": [],
+          "default": "synthetic_demo"
+        }
+      ],
+      "constraints": [
+        {
+          "kind": "CHECK",
+          "name": "ck_campaign_member_provenance",
+          "expression": "provenance = 'synthetic_demo'"
+        },
+        {
+          "kind": "CHECK",
+          "name": "ck_campaign_member_type",
+          "expression": "membership_type IN ('attack_participant','prior_participant')"
+        },
+        {
+          "kind": "UNIQUE",
+          "name": "uq_campaign_member_reviewer",
+          "columns": [
+            "synthetic_campaign_id",
+            "reviewer_id"
+          ]
+        }
+      ],
+      "indexes": [
+        {
+          "name": "ix_campaign_members_reviewer",
+          "columns": [
+            "reviewer_id",
+            "synthetic_campaign_id"
+          ],
+          "unique": false
+        }
+      ]
+    },
+    {
+      "name": "synthetic_campaign_reviews",
+      "columns": [
+        {
+          "name": "synthetic_campaign_review_id",
+          "type": "BIGINT",
+          "nullable": false,
+          "pk": true,
+          "foreign_keys": [],
+          "default": null
+        },
+        {
+          "name": "synthetic_campaign_id",
+          "type": "BIGINT",
+          "nullable": false,
+          "pk": false,
+          "foreign_keys": [
+            "synthetic_campaigns.synthetic_campaign_id"
+          ],
+          "default": null
+        },
+        {
+          "name": "review_id",
+          "type": "BIGINT",
+          "nullable": false,
+          "pk": false,
+          "foreign_keys": [
+            "reviews.review_id"
+          ],
+          "default": null
+        },
+        {
+          "name": "campaign_period",
+          "type": "VARCHAR(20)",
+          "nullable": false,
+          "pk": false,
+          "foreign_keys": [],
+          "default": null
+        },
+        {
+          "name": "evidence_note",
+          "type": "TEXT",
+          "nullable": false,
+          "pk": false,
+          "foreign_keys": [],
+          "default": null
+        },
+        {
+          "name": "provenance",
+          "type": "VARCHAR(30)",
+          "nullable": false,
+          "pk": false,
+          "foreign_keys": [],
+          "default": "synthetic_demo"
+        }
+      ],
+      "constraints": [
+        {
+          "kind": "CHECK",
+          "name": "ck_campaign_review_period",
+          "expression": "campaign_period IN ('attack','prior')"
+        },
+        {
+          "kind": "CHECK",
+          "name": "ck_campaign_review_provenance",
+          "expression": "provenance = 'synthetic_demo'"
+        },
+        {
+          "kind": "UNIQUE",
+          "name": "uq_campaign_review",
+          "columns": [
+            "synthetic_campaign_id",
+            "review_id"
+          ]
+        }
+      ],
+      "indexes": [
+        {
+          "name": "ix_campaign_reviews_period",
+          "columns": [
+            "synthetic_campaign_id",
+            "campaign_period",
+            "review_id"
+          ],
+          "unique": false
+        }
+      ]
+    },
+    {
+      "name": "synthetic_campaigns",
+      "columns": [
+        {
+          "name": "synthetic_campaign_id",
+          "type": "BIGINT",
+          "nullable": false,
+          "pk": true,
+          "foreign_keys": [],
+          "default": null
+        },
+        {
+          "name": "campaign_key",
+          "type": "VARCHAR(160)",
+          "nullable": false,
+          "pk": false,
+          "foreign_keys": [],
+          "default": null
+        },
+        {
+          "name": "campaign_name",
+          "type": "VARCHAR(200)",
+          "nullable": false,
+          "pk": false,
+          "foreign_keys": [],
+          "default": null
+        },
+        {
+          "name": "product_id",
+          "type": "BIGINT",
+          "nullable": false,
+          "pk": false,
+          "foreign_keys": [
+            "products.product_id"
+          ],
+          "default": null
+        },
+        {
+          "name": "prior_campaign_id",
+          "type": "BIGINT",
+          "nullable": true,
+          "pk": false,
+          "foreign_keys": [
+            "synthetic_campaigns.synthetic_campaign_id"
+          ],
+          "default": null
+        },
+        {
+          "name": "prior_start_at",
+          "type": "TIMESTAMP WITH TIME ZONE",
+          "nullable": false,
+          "pk": false,
+          "foreign_keys": [],
+          "default": null
+        },
+        {
+          "name": "prior_end_at",
+          "type": "TIMESTAMP WITH TIME ZONE",
+          "nullable": false,
+          "pk": false,
+          "foreign_keys": [],
+          "default": null
+        },
+        {
+          "name": "attack_start_at",
+          "type": "TIMESTAMP WITH TIME ZONE",
+          "nullable": false,
+          "pk": false,
+          "foreign_keys": [],
+          "default": null
+        },
+        {
+          "name": "attack_end_at",
+          "type": "TIMESTAMP WITH TIME ZONE",
+          "nullable": false,
+          "pk": false,
+          "foreign_keys": [],
+          "default": null
+        },
+        {
+          "name": "description",
+          "type": "TEXT",
+          "nullable": false,
+          "pk": false,
+          "foreign_keys": [],
+          "default": null
+        },
+        {
+          "name": "provenance",
+          "type": "VARCHAR(30)",
+          "nullable": false,
+          "pk": false,
+          "foreign_keys": [],
+          "default": "synthetic_demo"
+        },
+        {
+          "name": "created_at",
+          "type": "TIMESTAMP WITH TIME ZONE",
+          "nullable": false,
+          "pk": false,
+          "foreign_keys": [],
+          "default": "now()"
+        }
+      ],
+      "constraints": [
+        {
+          "kind": "UNIQUE",
+          "name": null,
+          "columns": [
+            "campaign_key"
+          ]
+        },
+        {
+          "kind": "CHECK",
+          "name": "ck_campaign_prior_window",
+          "expression": "prior_start_at < prior_end_at"
+        },
+        {
+          "kind": "CHECK",
+          "name": "ck_campaign_windows_order",
+          "expression": "prior_end_at <= attack_start_at"
+        },
+        {
+          "kind": "CHECK",
+          "name": "ck_campaign_provenance",
+          "expression": "provenance = 'synthetic_demo'"
+        },
+        {
+          "kind": "CHECK",
+          "name": "ck_campaign_attack_window",
+          "expression": "attack_start_at < attack_end_at"
+        }
+      ],
+      "indexes": [
+        {
+          "name": "ix_campaign_product_attack",
+          "columns": [
+            "product_id",
+            "attack_start_at",
+            "attack_end_at"
+          ],
+          "unique": false
+        }
+      ]
+    },
+    {
+      "name": "users",
+      "columns": [
+        {
+          "name": "user_id",
+          "type": "BIGINT",
+          "nullable": false,
+          "pk": true,
+          "foreign_keys": [],
+          "default": null
+        },
+        {
+          "name": "role_id",
+          "type": "BIGINT",
+          "nullable": false,
+          "pk": false,
+          "foreign_keys": [
+            "roles.role_id"
+          ],
+          "default": null
+        },
+        {
+          "name": "email",
+          "type": "VARCHAR(320)",
+          "nullable": false,
+          "pk": false,
+          "foreign_keys": [],
+          "default": null
+        },
+        {
+          "name": "email_normalized",
+          "type": "VARCHAR(320)",
+          "nullable": false,
+          "pk": false,
+          "foreign_keys": [],
+          "default": null
+        },
+        {
+          "name": "username",
+          "type": "VARCHAR(80)",
+          "nullable": true,
+          "pk": false,
+          "foreign_keys": [],
+          "default": null
+        },
+        {
+          "name": "password_hash",
+          "type": "VARCHAR(512)",
+          "nullable": false,
+          "pk": false,
+          "foreign_keys": [],
+          "default": null
+        },
+        {
+          "name": "is_active",
+          "type": "BOOLEAN",
+          "nullable": false,
+          "pk": false,
+          "foreign_keys": [],
+          "default": "true"
+        },
+        {
+          "name": "created_at",
+          "type": "TIMESTAMP WITH TIME ZONE",
+          "nullable": false,
+          "pk": false,
+          "foreign_keys": [],
+          "default": "now()"
+        },
+        {
+          "name": "updated_at",
+          "type": "TIMESTAMP WITH TIME ZONE",
+          "nullable": false,
+          "pk": false,
+          "foreign_keys": [],
+          "default": "now()"
+        },
+        {
+          "name": "last_login_at",
+          "type": "TIMESTAMP WITH TIME ZONE",
+          "nullable": true,
+          "pk": false,
+          "foreign_keys": [],
+          "default": null
+        }
+      ],
+      "constraints": [
+        {
+          "kind": "UNIQUE",
+          "name": null,
+          "columns": [
+            "email_normalized"
+          ]
+        },
+        {
+          "kind": "CHECK",
+          "name": "ck_users_email_normalized",
+          "expression": "email_normalized = lower(trim(email))"
+        },
+        {
+          "kind": "UNIQUE",
+          "name": null,
+          "columns": [
+            "username"
+          ]
+        }
+      ],
+      "indexes": [
+        {
+          "name": "ix_users_role_id",
+          "columns": [
+            "role_id"
+          ],
+          "unique": false
+        }
+      ]
+    }
+  ]
+}

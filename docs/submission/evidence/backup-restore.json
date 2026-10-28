@@ -1,0 +1,39 @@
+{
+  "native_tools": [
+    "pg_dump -Fc",
+    "pg_restore --single-transaction --exit-on-error"
+  ],
+  "schema_revision": "0007_database_features",
+  "row_counts": {
+    "alembic_version": 1,
+    "audit_logs": 48,
+    "batch_analyses": 8,
+    "batch_analysis_rows": 240,
+    "fraud_predictions": 30,
+    "graph_snapshot_reviews": 28305,
+    "graph_snapshots": 2,
+    "graph_sync_jobs": 3,
+    "inductive_inference_jobs": 1,
+    "inductive_prediction_evidence": 30,
+    "inference_runs": 1,
+    "model_versions": 2,
+    "preprocessing_versions": 2,
+    "products": 189,
+    "review_feedback": 0,
+    "review_variants": 0,
+    "reviewers": 17351,
+    "reviews": 28415,
+    "roles": 2,
+    "session_tokens": 30,
+    "synthetic_campaign_members": 36,
+    "synthetic_campaign_reviews": 79,
+    "synthetic_campaigns": 2,
+    "users": 2
+  },
+  "joined_prediction_provenance_count": 30,
+  "dump_sha256": "d64d4d1a53fa1e557be7848b4c6ce389dae11c280f568a1f245ed65b973f026f",
+  "restore_isolated_from_source": true,
+  "source_counts_unchanged": true,
+  "all_counts_match": true,
+  "dump_bytes": 10239431
+}
