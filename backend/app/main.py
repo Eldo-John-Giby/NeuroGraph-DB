@@ -20,7 +20,7 @@ from app.models import ModelVersion, PreprocessingVersion
 
 app = FastAPI(title="NeuroGraph-DB API", version="0.1.0")
 logger = logging.getLogger("neurograph.api")
-app.add_middleware(CORSMiddleware, allow_origins=[x.strip() for x in get_settings().cors_origins.split(",") if x.strip()],
+app.add_middleware(CORSMiddleware, allow_origins=["*"],
                    allow_credentials=True, allow_methods=["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
                    allow_headers=["Authorization", "Content-Type", "Idempotency-Key"])
 app.include_router(router)
