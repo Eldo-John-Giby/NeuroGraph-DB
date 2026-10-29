@@ -1,123 +1,57 @@
-# NeuroGraph-DB Defense Presentation Outline (12 Slides)
+# NeuroGraph-DB: class presentation outline
 
-This document outlines the presentation slide deck for the NeuroGraph-DB academic defense.
+Use [BEGINNER_VIVA_GUIDE.md](BEGINNER_VIVA_GUIDE.md) for simple explanations and [LIVE_DEMO_SCRIPT.md](LIVE_DEMO_SCRIPT.md) for the current screen order. This outline replaces older notes containing outdated navigation and unsupported speed claims.
 
----
+## 1. Problem and purpose
 
-### Slide 1: Problem Definition & Threat Model
-- **Title:** The Camouflage Review Spam Challenge
-- **Core Problem:** Online platforms face sophisticated, LLM-generated fake review rings that evade traditional detection.
-- **Fraud Camouflage:** Fraudulent actors post benign-looking ratings across random products to manipulate graph topology, dilute heterophily signals, and bypass standard GNNs.
-- **Thesis Statement:** Effective defense requires combining frozen deep linguistic representations with multi-relational graph topology, supported by hybrid database infrastructure and honest temporal evaluation protocols.
+Suspicious reviews can look normal in isolation. We combine review language, numeric facts and relationships to help a human investigate. A model flag is not proof of fraud.
 
----
+## 2. Real data and demonstration data
 
-### Slide 2: Target Audience & Operational Personas
-- **Title:** Operational Personas & Workflows
-- **Restaurant & Business Owners:** Require non-technical, explainable fraud assessments with transparent relation-attention breakdowns to understand why a review was flagged.
-- **Trust & Safety Analysts:** Need multi-hop graph exploration in Neo4j, collusive ring identification, and immutable cryptographic evidence tracking.
-- **System Administrators:** Enforce role-based access control, manage historical graph context permissions, and supervise fail-closed model integrity.
+The exact final labelled source is Kaggle's `samygithub/collective-opinion-spam-detection`, `training_data.csv`: 47,176 rows, Y=6,243 and N=40,933. Labels reflect Yelp filtering and are imperfect research reference labels. Harbor Table and related example scenarios are separately labelled synthetic data.
 
----
+## 3. Train, validation and test
 
-### Slide 3: End-to-End System Architecture
-- **Title:** Hybrid Database & Inference Architecture
-- **Presentation Flow:** High-level architectural diagram illustrating presentation, API, storage, and worker layers.
-- **Hybrid Storage Rationale:**
-  - PostgreSQL 15: ACID system of record, 3NF relational normalization, B-tree indexes, and transactional audit trails.
-  - Neo4j 5: Read-optimized index-free adjacency graph projection for sub-5ms Cypher pattern matching.
-- **Asynchronous Execution:** Durable leased worker queue (`inductive_inference_jobs`) decoupling HTTP ingestion from GPU inference.
+Sort labelled rows by date and review ID: 28,305 train, 9,435 validation, 9,436 test. Training learns weights; validation chooses the checkpoint/cutoff; the final test measures performance. The downloaded unlabelled `testing_data.csv` is not the measured test set. Show exact local exports and their verification proof.
 
----
+## 4. Neural model and graph relations
 
-### Slide 4: Relational Schema & Integrity Constraints
-- **Title:** Relational Modeling & Database Constraints
-- **Schema Design:** 3NF normalization covering `users`, `products`, `reviews`, `inference_runs`, `fraud_predictions`, and `inductive_prediction_evidence`.
-- **Database-Level Invariants:**
-  - `ck_model_provenance` & `ck_graph_snapshot_provenance`: Strict isolation between real and synthetic demo records.
-  - `ck_snapshot_context_scope`: Ensures batch context is permitted only on valid, scoped snapshots.
-  - Foreign-key cascade rules and non-null constraints ensuring relational consistency.
+Frozen RoBERTa produces 768-number text embeddings. Fourteen numeric features include rating, earlier activity, writing style and time. One GraphSAGE branch per relation handles RUR (same reviewer), RSR (same product/rating) and RTR (same product within 30 days). Learned text-conditioned relation attention and gated fusion feed a classifier. Neighbor cap: 50 recent earlier reviews per relation.
 
----
+## 5. Training controls
 
-### Slide 5: Graph Schema & Topological Traversals
-- **Title:** Graph Design & Collusive Ring Discovery
-- **Graph Schema:** Heterogeneous structure featuring `(:User)`, `(:Review)`, and `(:Product)` nodes with `[:WROTE]` and `[:ABOUT]` edges.
-- **Relational Projections:** Derived multi-relational edges (RUR: same author, RSR: same restaurant & rating, RTR: same restaurant within 30 days).
-- **Cypher Traversal Advantage:** Multi-hop collusive review ring detection executes in $<7\text{ ms}$ on Neo4j compared to $>320\text{ ms}$ for equivalent nested SQL self-joins.
+Seed 42, hidden dimension 128, dropout 0.2, AdamW, learning rate 0.001, weight decay 0.0001, class-weighted cross entropy. Up to 80 epochs, patience 12; recorded run completed 80 and selected epoch 74. Text encoding uses 192 tokens and batches of 64 during preparation; graph training is full-batch. These settings are not claimed to be globally optimal.
 
----
+## 6. Final result and threshold
 
-### Slide 6: The Three-Lane Provenance Model
-- **Title:** Strict Three-Lane Provenance Separation
-- **Lane 1 (Synthetic Restaurant Scenario):** Harbor Table review-bombing demo; labeled `synthetic_demo`; **strictly zero ML scoring**.
-- **Lane 2 (Verified Transductive Benchmark):** Frozen 47,176-review raw YelpChi benchmark; transductive known-node baseline; ROC-AUC `0.8439`.
-- **Lane 3 (Inductive Restaurant CSV Assessment):** Live CSV batch scoring against permitted historic snapshots; temporal streaming replay; ROC-AUC `0.8105`.
-- **Ethical & Scientific Value:** Eliminates conflation between research benchmarks and synthetic UI demonstrations.
+Final inductive test ROC-AUC **0.8105**, macro F1 **0.6624**, PR-AUC/average precision **0.4211**. Validation-selected threshold **0.7870707071**, chosen from 199 candidate cutoffs using macro F1. Explain false positives, false negatives, and why ROC-AUC is not ordinary accuracy. Scores are not separately calibrated probabilities.
 
----
+## 7. Supporting benchmarks
 
-### Slide 7: Multimodal ML Architecture
-- **Title:** Dual-Branch Cross-Attention Architecture
-- **Semantic Branch:** Frozen `FacebookAI/roberta-base` generating 768-d masked-mean embeddings.
-- **Structural Branch:** Independent PyG `SAGEConv` layers processing RUR, RSR, and RTR relation subgraphs.
-- **Cross-Attention & Gated Fusion:** Text-conditioned attention dynamically weights structural vectors ($w_{\text{rur}} + w_{\text{rsr}} + w_{\text{rtr}} = 1.0$), combined with text representations via a learned gate before classification.
+| Experiment | ROC-AUC | Macro F1 | Boundary |
+|---|---:|---:|---|
+| Structured MAT GNN baseline | 0.9331 | 0.8078 | 45,954 nodes, 32 numeric features, no raw-text modality |
+| Raw multimodal known-node model | 0.8439 | 0.6860 | 47,176 raw reviews, fixed known-node graph, random stratified split |
+| Final inductive model | 0.8105 | 0.6624 | Chronological new-arrival evaluation |
 
----
+Different protocols and representations prevent an apples-to-apples superiority claim. Show run records, manifests and fixed-review reproduction as evidence, not a guarantee of every future prediction.
 
-### Slide 8: Evaluation Protocol & Anti-Leakage Invariants
-- **Title:** Honest Inductive Arrival Replay
-- **Temporal Partitioning:** Chronologically ordered Train (60%), Validation (20%), and Test (20%) windows.
-- **Anti-Leakage Guarantees:**
-  - Strictly past-to-present edge directionality ($src < tgt$ and $date[src] \le date[tgt]$).
-  - Train-only feature scaler fitting.
-  - Validation-only threshold selection ($0.787071$).
-  - Label-free SQL context queries.
-  - Deterministic 50-neighbor caps with tie-breaking.
+## 8. Databases and architecture
 
----
+Next.js frontend → FastAPI → PostgreSQL, neural runtime, Neo4j. PostgreSQL 16 is the authoritative record store; SQLAlchemy/Alembic implement the relational application. Neo4j 5 stores relationship projections; PyTorch/PyG perform inference. For uploaded analyses, graph reconstruction checks the saved inference fingerprint before projecting actual context links. Do not claim an unmeasured database speed advantage.
 
-### Slide 9: Benchmark Performance & Metrics
-- **Title:** Verified Empirical Results
-- **Presentation of Metrics Table:**
-  | Model | Protocol | ROC-AUC | F1-Macro | PR-AUC | Threshold |
-  |---|---:|---:|---:|---:|---:|
-  | Structured MAT GNN | Transductive known-node | 0.9331 | 0.8078 | 0.7454 | 0.7673 |
-  | Raw multimodal model | Transductive known-node | 0.8439 | 0.6860 | 0.4507 | 0.6732 |
-  | Inductive multimodal model | Temporal arrival replay | 0.8105 | 0.6624 | 0.4211 | 0.7871 |
-- **Key Insight:** Explain that the transductive-to-inductive delta reflects honest real-world evaluation where future graph shortcuts are prohibited.
+## 9. User workflow and human review
 
----
+Upload → validation → scoring → saved result → Products & history. Each researcher can reopen their own analyses. Admins can explicitly view all-user history, create accounts, moderate feedback and change snapshot context permission. Review feedback retains human notes separately from machine predictions; it does not automatically relabel training data or retrain the model.
 
-### Slide 10: Live Demonstration Overview
-- **Title:** System Walkthrough Route (7 Minutes)
-- **Demo Sequence:**
-  1. Authentication & RBAC.
-  2. Three-lane dashboard navigation.
-  3. Synthetic Neo4j campaign analysis.
-  4. Transductive benchmark inspection.
-  5. Fail-closed model registry and fixed-node verification.
-  6. Inductive CSV upload and transactional intake.
-  7. Background worker execution.
-  8. Relation-attention explanation and cryptographic evidence modal.
-  9. PostgreSQL audit log verification.
+## 10. Database coursework evidence
 
----
+Show the 23-table ERD, dictionary, normalization analysis, joins/constraints/transactions, the two aggregate views, `resolve_review_feedback` procedure, feedback audit trigger, and native backup/restore evidence. Explain the distinction between the Audit operations diagnostics screen and stored `audit_logs` rows. Reviewer catalog lists source authors; its endpoint currently requires login rather than ADMIN specifically.
 
-### Slide 11: System Integrity & Cryptographic Provenance
-- **Title:** Reproducibility & Cryptographic Integrity
-- **Manifest Verification:** Pinned SHA-256 hashes for `run_manifest.json`, tokenizer revision, and constituent model files.
-- **Fixed-Node Guarantees:** Local forward reproduction asserts score parity within numerical tolerance ($\le 10^{-6}$).
-- **Persisted Evidence:** Every prediction permanently stores stitched graph SHA-256, feature hashes, embedding hashes, and connected neighbor IDs.
-- **Zero Fabrication:** Fail-closed design ensures missing dependencies result in explicit error states rather than synthetic outputs.
+## 11. Deployment and verification
 
----
+Vercel Hobby hosts the frontend. One AWS EC2 instance hosts Dockerized FastAPI, PostgreSQL and Neo4j with Caddy HTTPS. CloudFormation/SSM support terminal provisioning and updates; private bundles stay outside Git. GitHub Actions tests/builds the application; do not claim it automatically deploys the backend. AWS hosting is finite Free-plan credit usage.
 
-### Slide 12: Limitations & Future Directions
-- **Title:** Limitations & Future Research
-- **Current Limitations:** Chicago restaurant domain specificity, uncalibrated probability scores under extreme imbalance, and legacy heuristic ground truth.
-- **Future Work:**
-  - Domain adaptation for general e-commerce platforms.
-  - Platt scaling / isotonic regression for calibrated Bayesian posterior risks.
-  - Self-supervised graph contrastive pretraining.
-  - Streaming continual learning to counter evolving LLM camouflage.
+## 12. Contribution and limitations
+
+Contribution: a working text-plus-graph investigation workflow with time-aware context, saved private history, reproducible model evidence and auditable human feedback. Existing RoBERTa/GraphSAGE/YelpChi techniques are reused, not invented. Limits: imperfect historical labels, domain shift, one recorded seed, uncalibrated scores and imperfect classification. Future work can include newer labelled data, repeated runs, fair component comparisons and stronger calibration.

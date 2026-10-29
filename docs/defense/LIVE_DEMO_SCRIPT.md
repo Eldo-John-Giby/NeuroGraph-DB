@@ -1,137 +1,63 @@
-# NeuroGraph-DB Live Defense Demonstration Script
+# NeuroGraph-DB: current class demonstration
 
-**Total Duration:** Exactly 7 Minutes (420 Seconds)  
-**Presenter Tone:** Academically honest, rigorous, precise, and transparent.
+Allow about eight minutes. Use the [beginner viva guide](BEGINNER_VIVA_GUIDE.md) to understand the terms first. This route reflects the final model-first application, not the earlier synthetic-first dashboard.
 
----
+Live application: https://frontend-three-snowy-10.vercel.app
 
-### Step 1: Authentication & Role-Based Access Control
-**Time Budget:** `[0:00 - 0:30]` (30 Seconds)  
-**URL:** `http://localhost:3000/login`
+## 1. Explain the purpose and final result — one minute
 
-> **Speaker Notes:**  
-> "Good morning, members of the committee. We begin on the NeuroGraph-DB authentication portal.  
-> 
-> The system enforces role-based access control with Argon2id password hashing and database-backed session token revocation. We log in using our administrative demo credentials.  
-> 
-> Notice that session tokens are hashed and stored in PostgreSQL with explicit expiration timestamps, satisfying enterprise auditability requirements."
+Open **Model results** with the researcher account.
 
-*(Action: Click 'Fill Admin Demo', then click 'Sign in'.)*
+> “We help investigate suspicious reviews using their words and connections to earlier reviews. The final model's test ROC-AUC is 0.8105 and macro F1 is 0.6624. These are measured on 9,436 later labelled reviews; they are not an accuracy guarantee for every uploaded CSV.”
 
----
+Point out the final threshold, approximately 0.7871. A flag is a request for investigation, not proof of fraud.
 
-### Step 2: Risk Overview & The Three-Lane Architecture
-**Time Budget:** `[0:30 - 1:30]` (60 Seconds)  
-**URL:** `http://localhost:3000/`
+## 2. Show the actual dataset — one minute
 
-> **Speaker Notes:**  
-> "Upon login, we arrive at the Risk Overview dashboard. A central innovation of our software architecture is the **strict three-lane provenance separation** displayed on this page.  
-> 
-> - **Lane 1** at the top displays synthetic demonstration evidence from a simulated restaurant review-bombing campaign. We explicitly disclaim model output here: no fake ML scores are synthesized.  
-> - **Lane 2** displays our frozen 47,176-review raw YelpChi transductive benchmark. It features our verified RoBERTa + PyG cross-attention model achieving an ROC-AUC of 0.8439.  
-> - **Lane 3** at the bottom is our inductive restaurant batch scoring lane, where new review CSV uploads are evaluated against permitted historical graph contexts without data leakage.  
-> 
-> This visual separation prevents any confusion between synthetic demonstrations and verified scientific benchmarks."
+Open `output/viva/OPEN_FIRST.md`, then the 12-row example file and dataset/split proof. The original labelled source has 47,176 real historical Yelp reviews: 28,305 train, 9,435 validation, 9,436 test after chronological ordering. Show `test_exact.csv` and `metrics.json`.
 
----
+> “Training teaches the model, validation chooses the checkpoint and threshold, and the test measures the locked choice. The downloaded file named testing_data.csv has no labels; it is not the source of these measured test results.”
 
-### Step 3: Synthetic Neo4j Restaurant Campaign Exploration
-**Time Budget:** `[1:30 - 2:15]` (45 Seconds)  
-**URL:** `http://localhost:3000/campaigns/harbor-table-review-bombing-seed-42`
+The small example file deliberately shows both labels from all splits. It is an illustration, not the full test or a newly balanced evaluation.
 
-> **Speaker Notes:**  
-> "Let us investigate Lane 1's Harbor Table campaign. This scenario models a coordinated 100-review attack on a single restaurant.  
-> 
-> PostgreSQL stores the 3NF review entities, while Neo4j visualizes the collusive graph topology. Here, Neo4j's index-free adjacency allows us to run Cypher queries that discover multi-hop reviewer rings sharing targeted products in under 7 milliseconds — a query that requires over 320 milliseconds in relational SQL self-joins.  
-> 
-> Once again, note the provenance banner: this is purely a topological demonstration; no model fraud scores are generated here."
+## 3. Upload and reopen a saved result — two minutes
 
----
+Open **Upload & analyze**. Download the site's sample CSV and upload it using the compatible, automatically selected historical context. Do not upload the labelled historical evidence files as new reviews.
 
-### Step 4: Verified Transductive Benchmark Inspection
-**Time Budget:** `[2:15 - 3:00]` (45 Seconds)  
-**URL:** `http://localhost:3000/` (Scroll to Lane 2)
+> “Our model combines frozen RoBERTa text embeddings with three GraphSAGE relationship branches. The connections are same reviewer, same product and rating, and same product within 30 days. Only allowed earlier context is used, with at most 50 recent neighbors per relation.”
 
-> **Speaker Notes:**  
-> "Returning to the main dashboard, we inspect Lane 2: the verified transductive benchmark.  
-> 
-> Unlike legacy benchmarks that use anonymous 32-dimensional metadata matrices, this model operates directly on raw review text from 47,176 reviews. Frozen RoBERTa 768-dimensional embeddings are fused with PyG GraphSAGE representations across RUR, RSR, and RTR relations.  
-> 
-> It achieves a test ROC-AUC of 0.8439 and F1-macro of 0.6860 at threshold 0.6732. Because transductive models assume a closed-world graph, this serving runtime is strictly read-only and rejects arbitrary new reviews."
+Show actual saved scores and relation evidence. Explain that attention is a model weight, not a proof of the real-world reason someone wrote a fake review. An unlabelled sample demonstrates the workflow, not measured accuracy.
 
----
+Open **Products & history**, select the saved filename, and reopen its calculated result. A repeated identical upload can recover the earlier receipt/run. Show the analysis graph if available.
 
-### Step 5: Model Registry, Manifest Hashes & Reproduction
-**Time Budget:** `[3:00 - 3:45]` (45 Seconds)  
-**URL:** `http://localhost:3000/models`
+> “PostgreSQL stores the records and results. PyTorch calculates the scores. Neo4j stores the investigation graph projection.”
 
-> **Speaker Notes:**  
-> "To guarantee scientific reproducibility, we navigate to the Model Registry.  
-> 
-> Every model checkpoint must be accompanied by an immutable cryptographic manifest. Here, you see manifest SHA-256 `653729f3...` and the pinned Hugging Face tokenizer revision `e2da8e2f...`.  
-> 
-> On startup, the backend verifies all constituent file checksums and executes forward inference on fixed review `--AweNX8vPGD`. The serving adapter confirms the reproduced score matches within an absolute tolerance of 1e-6 without accessing ground-truth labels. If any byte diverges, the runtime fails closed."
+Do not promise an autonomous background worker: the current API invokes the processing function while retaining durable job/run state.
 
----
+## 4. Show supporting research and synthetic examples — one minute
 
-### Step 6: Inductive CSV Intake & Transactional Validation
-**Time Budget:** `[3:45 - 4:30]` (45 Seconds)  
-**URL:** `http://localhost:3000/reviews/submit`
+Open **Benchmark evidence**: this is the earlier raw multimodal known-node experiment, ROC-AUC 0.8439, with a different protocol.
 
-> **Speaker Notes:**  
-> "Now we demonstrate Lane 3: live inductive batch scoring.  
-> 
-> In this intake portal, restaurant operators upload incoming review batches. Notice the historical context snapshot dropdown: we select permitted snapshot #1, which enforces the `inductive-rur-rsr-rtr-v1` relation policy.  
-> 
-> We select our prepared demo CSV. Notice that the CSV contains only review IDs, reviewer IDs, restaurant IDs, ratings, dates, and text — zero ground-truth label columns.  
-> 
-> When we click 'Validate & upload', PostgreSQL transactionally validates every row before any model scoring is attempted."
+Open **Example investigation**: point out the synthetic-data banner.
 
-*(Action: Select Snapshot #1, select `sample_restaurant_batch.csv`, click 'Validate & upload'.)*
+> “These pages support the project but serve different purposes. The known-node result is not the final new-upload test, and synthetic restaurant examples are not real model-performance evidence.”
 
----
+Do not claim a controlled improvement over the structured MAT baseline or quote unmeasured SQL-versus-Neo4j response times.
 
-### Step 7: Queued Worker State & Asynchronous Execution
-**Time Budget:** `[4:30 - 5:15]` (45 Seconds)  
-**URL:** `http://localhost:3000/reviews/submit`
+## 5. Demonstrate human feedback and administration — one minute
 
-> **Speaker Notes:**  
-> "Upon upload, the batch enters the `queued` state. Ingestion is fully decoupled from neural network inference.  
-> 
-> In the database, an `inference_run` and an `inductive_inference_job` have been created. Background workers claim these jobs using atomic database lease updates.  
-> 
-> We now click 'Process now' to trigger worker execution. The worker verifies the inductive bundle manifest (`9d4f10a8...`), builds strictly past-to-candidate edges, computes RoBERTa embeddings in bounded batches, and scores only the uploaded nodes."
+In **Review feedback**, create a short disposable note about an accessible review, edit it while submitted, and show it in the list. An admin can triage, resolve or reject feedback. Resolved feedback is locked against ordinary author edits.
 
-*(Action: Click 'Process now'.)*
+> “We preserve the original prediction and the human's judgment separately. Feedback does not retrain the model or overwrite its old score.”
 
----
+Show the admin menus and account-creation function. Describe **Reviewer catalog** as source review authors, not website login users or confirmed fraudsters. Its current API is available to authenticated users even though the sidebar places it under Administration.
 
-### Step 8: Flagged Review Evidence, Relation Attention & Graph Neighbors
-**Time Budget:** `[5:15 - 6:30]` (75 Seconds)  
-**URL:** `http://localhost:3000/reviews/submit` (Scroll to Lane 3 Scored Results)
+## 6. Show database and deployment evidence — one minute
 
-> **Speaker Notes:**  
-> "The batch has completed scoring. Let us examine the results.  
-> 
-> First, observe the summary statistics: the score distribution bar categorizes reviews into Low, Moderate, High, and Severe risk tiers based on our validation-calibrated threshold of 0.7871.  
-> 
-> Second, in the scored reviews table, each review displays its actual fraud score and decision badge. Expanding the relation-attention bar reveals the genuine weights emitted by the neural network: here, review `demo-rev-002` was flagged with high RSR (same rating) and RTR (temporal burst) attention weights.  
-> 
-> Third, we click 'View Evidence'. This modal displays the cryptographic provenance: the 64-character SHA-256 of the stitched PyG graph, the input feature matrix, the embedding matrix, and the exact list of up to 50 historical neighbor review IDs. Everything is auditable and mathematically verifiable."
+Open the complete ERD and `backend/alembic/versions/0007_database_features.py`. Explain primary/foreign keys, the two aggregate views, feedback moderation procedure and feedback audit trigger. Show the isolated backup/restore evidence if asked.
 
-*(Action: Click 'View Evidence' on a flagged review to show the modal with SHA-256 hashes.)*
+> “The frontend is on Vercel. The FastAPI backend, PostgreSQL 16 and Neo4j 5 run in Docker on one AWS EC2 server. CloudFormation describes the infrastructure. The AWS Free plan uses finite credits; it is not unlimited free hosting.”
 
----
+The **Audit operations** screen displays diagnostics, not the full audit table. Its generic readiness status includes a separate legacy model contract; use the active model's status and actual saved inference evidence when discussing that runtime.
 
-### Step 9: Audit Trail & Closing Architectural Synthesis
-**Time Budget:** `[6:30 - 7:00]` (30 Seconds)  
-**URL:** `http://localhost:3000/admin/audit`
-
-> **Speaker Notes:**  
-> "Finally, we visit the Administrative Audit Log.  
-> 
-> Every session login, batch permission update, and inference run is recorded immutably in PostgreSQL with actor IDs, timestamps, and state diffs.  
-> 
-> In summary, NeuroGraph-DB demonstrates that relation-aware graph neural networks can be paired with modern language models to defeat camouflage review spam — while maintaining strict database integrity, honest inductive evaluation, and zero data leakage.  
-> 
-> Thank you, and we welcome your questions."
+Keep credential files off the projector. If a service fails during the demonstration, show saved evidence and state the limitation; do not invent live results.

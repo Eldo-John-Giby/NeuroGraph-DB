@@ -4,6 +4,8 @@ A database-backed review investigation app with verified graph-model inference. 
 
 [Open the live application](https://frontend-three-snowy-10.vercel.app) · [Rubric and evidence](docs/submission/README.md) · [Complete ER diagram](docs/submission/ERD.md) · [Data dictionary](docs/submission/DATA_DICTIONARY.md)
 
+Preparing to present? Start with the [plain-English viva guide](docs/defense/BEGINNER_VIVA_GUIDE.md), which explains the exact dataset, train/test split, model, scores, database roles and files to show.
+
 Access is by an administrator-provisioned account. Demo credentials are shared privately, never in this repository. The app is a student research demonstration; a model flag is an investigation signal, not proof of fraud.
 
 ## What to try
