@@ -6,6 +6,8 @@ NeuroGraph-DB is a review investigation application that stores review identitie
 
 The final deployed model is a temporal inductive RoBERTa and relational graph model. Its verified chronological test ROC-AUC is 0.8105, F1 macro is 0.6624 and PR-AUC is 0.4211 on 9,436 unseen test reviews. The model's output is an investigation signal. It does not prove that a review is fraudulent and it does not establish accuracy on an unlabelled user upload.
 
+A controlled four-model comparison now holds the real-data identities and chronological split fixed. Across seeds 42/43/44, simple concatenation has the highest mean metrics; the deployed NeuroGraph checkpoint has the highest macro F1 for seed 42. The project does not claim that text-conditioned attention consistently beats concatenation.
+
 The database contribution is the durable, secure workflow around those model results: normalized source identities, foreign-key integrity, versioned evidence, transactional CSV intake, requester-specific result history, audited human feedback and native recovery. PostgreSQL is the authoritative database; Neo4j is a relationship projection. A clearly labelled synthetic case study supports demonstration without being presented as the model's measured performance.
 
 ## 2 Problem statement and objectives
@@ -121,7 +123,7 @@ The application joins batch rows to reviews, products and authors for investigat
 | vw_batch_analysis_summary | LEFT JOIN from upload receipts to their inference-run predictions; COUNT, SUM of flagged decisions and AVG risk grouped per batch |
 | vw_product_review_summary | LEFT JOIN from products to reviews; COUNT reviews and AVG rating grouped per product, including products without reviews |
 
-The production administrator summary at verification contained 18 upload receipts, 72 saved predictions, 193 products and 28,427 reviews. These include all users and reference data. They are not metrics for one uploaded file and are not the final model's test sample size.
+At the 29 October 2026 verification, the production administrator summary contained 18 upload receipts, 72 saved predictions, 193 products and 28,427 reviews. These include all users and reference data. They are not metrics for one uploaded file and are not the final model's test sample size.
 
 ### Stored procedure and trigger
 
@@ -143,11 +145,43 @@ The upload form selects a compatible historical context. The older known-node mu
 
 The graph initially shows all available relations and reports the number of shown links. Explanations use genuine saved relation attention where provided, rather than assigning a made-up explanation from the risk threshold. The application uses a connected review/evidence logo and matching browser icon. Responsive layouts and accessible labels support desktop and smaller screens.
 
-![Final model workspace](assets/model-results-live.png)
+![Final model workspace](assets/model-results-live.jpg)
 
 ![Personal saved analysis history](assets/history-live.png)
 
 ![Audited feedback and administrator moderation](assets/feedback-live.png)
+
+### Controlled model comparison
+
+The Model comparison page at /benchmarks addresses the earlier lack of a like-for-like architecture comparison. All four arms share the exact 47,176 raw review identities, chronological train/validation/test membership, source label mapping and validation-selection objective. The test has 9,436 reviews, including 1,251 spam and 8,185 nonspam labels. Text-enabled arms share the frozen RoBERTa vectors; graph-enabled arms share the same 14 features and causal RUR/RSR/RTR edges. Input modalities and trainable parameter counts intentionally differ as architecture ablations.
+
+For seed 42, the NeuroGraph arm reuses the sealed deployed checkpoint and reproduces its recorded metrics within 1e-6. The other arms are trained under the fixed plan. Seeds 43 and 44 provide additional training initializations without changing dataset membership. All use hidden width 128, dropout 0.2, AdamW learning rate 0.001, weight decay 0.0001, class-weighted cross entropy, a maximum of 80 epochs and patience 12. The selected epoch and one of 199 cutoffs are chosen by validation macro F1 before test metrics are calculated.
+
+| Seed 42 architecture | ROC-AUC | Average precision | Macro F1 |
+|---|---:|---:|---:|
+| Text only | 0.7835 | 0.4035 | 0.6475 |
+| Graph only | 0.7373 | 0.2685 | 0.5974 |
+| Text + graph concatenation | 0.8109 | 0.4213 | 0.6592 |
+| NeuroGraph | 0.8105 | 0.4211 | 0.6624 |
+
+NeuroGraph has the highest macro F1 for seed 42. Concatenation has slightly higher seed-42 ROC-AUC and average precision. These metric-specific observations are not a universal superiority claim.
+
+| Architecture across 3 seeds | ROC-AUC mean and SD | AP mean and SD | Macro F1 mean and SD |
+|---|---:|---:|---:|
+| Text only | 0.7821 ± 0.0015 | 0.4011 ± 0.0024 | 0.6499 ± 0.0022 |
+| Graph only | 0.7389 ± 0.0016 | 0.2687 ± 0.0020 | 0.5983 ± 0.0020 |
+| Text + graph concatenation | 0.8110 ± 0.0034 | 0.4222 ± 0.0099 | 0.6628 ± 0.0034 |
+| NeuroGraph | 0.8084 ± 0.0033 | 0.4154 ± 0.0162 | 0.6589 ± 0.0033 |
+
+Concatenation has the highest three-seed mean. Both combined arms outperform the single-modality arms in these recorded runs. The attention/gate does not demonstrate a consistent metric improvement over simple concatenation. SD is sample standard deviation across training seeds, not a confidence interval; a small mean difference is not presented as established statistical superiority. No production checkpoint was replaced by selecting the highest test score.
+
+The site provides selectable seeds/mean, zero-to-one metric bars, ROC and precision-recall curves, recorded cutoffs and download links. It additionally tests missing-context sensitivity by independently removing links with probability 10%, 30% or 50%, using a fixed label-independent seed and frozen weights/cutoffs. This is not an LLM camouflage or real coordinated-attack robustness claim.
+
+The earlier 45,954-node structured MAT run (0.9331 ROC-AUC), random-split raw known-node run (0.8439) and deployed temporal checkpoint (0.8105) remain visible as historical records below the matched charts. They are excluded from the new ranking because their representations or evaluation rules differ. The 5,000-node near-perfect prototype tables were synthetic, with label-conditioned features and links, and are superseded as real-data performance evidence.
+
+The comparison is retrospective on the existing holdout rather than a new independent blind dataset. Source timestamps have day-level resolution, so review-ID ordering within a day is a replay convention rather than verified real arrival time. The modality comparison does not isolate graph links from the numeric features added alongside them. The original deployed checkpoint was GPU-trained; added runs train on CPU using the same optimization settings, with recorded environments. Temporal replay permits earlier unlabelled arrivals as context, whereas a live snapshot/upload can supply different history. These limitations and the imperfect Yelp reference labels are documented beside the results. The report JSON, per-run logs, validation selections and artifact fingerprints are committed; raw reviews, checkpoints and prediction arrays remain private/local dependencies.
+
+![Controlled comparison on the shared chronological test](assets/model-comparison-live.jpg)
 
 ## 9 Authentication authorization and security
 
@@ -175,7 +209,9 @@ The cloud patch also retained a native database export and the previous backend 
 |---|---|
 | Backend suite with disposable PostgreSQL | 85 passed, 0 failed, 0 skipped |
 | Clean checkout without private bundles | 73 passed; 12 explicit bundle-dependent skips; PostgreSQL tests included |
-| Frontend authentication regressions | 10 passed, 0 failed |
+| Frontend authentication regressions | 10 passed, 0 failed; rerun 31 October |
+| Matched benchmark scientific contracts | 6 passed; thresholds, sparse gradients, shared labels, metric reproduction and publication identity checked |
+| Responsive comparison interface | Desktop and phone views, seed selection and metric switching verified |
 | Production frontend build | Compiled successfully with type and lint checks |
 | Native backup and restore | Equal table counts, preserved source and 30 joined prediction-provenance records |
 | Live application feedback workflow | Create/read/update/delete, admin resolution, locked resolved notes, validation and role denial passed |
@@ -189,7 +225,7 @@ The AWS deployment uses an active Free account plan and refuses scripted mutatio
 
 The repositories preserve progressive history exceeding ten meaningful commits and provide main and dev branches. The public team repository remains updated. A private submission mirror exists under Avaneesh Chavan's account; the approved existing teammates have been invited with push permission and must accept those invitations. Secrets, dumps, local submission identities, large private bundles and rendered intermediates are excluded from commits.
 
-The corrected GitHub Actions workflow tests the actual FastAPI service rather than the archived Express prototype. The verified successful run is https://github.com/Eldo-John-Giby/NeuroGraph-DB/actions/runs/40781489918. Its backend, frontend and container jobs all completed successfully. It runs the API/model-contract suite and real PostgreSQL migrations, Next.js lint/build and authentication tests, and a deployable Docker build. Standard Linux runners execute on the public source repository; hosted jobs skip the private mirror to avoid consuming metered allowances. No workflow embeds cloud credentials or launches an unguarded paid deployment.
+The corrected GitHub Actions workflow tests the actual FastAPI service rather than the archived Express prototype. The verified successful run is https://github.com/Eldo-John-Giby/NeuroGraph-DB/actions/runs/41132134731. Its backend, frontend and container jobs all completed successfully. It runs the API/model-contract suite and real PostgreSQL migrations, Next.js lint/build and authentication tests, and a deployable Docker build. Standard Linux runners execute on the public source repository; hosted jobs skip the private mirror to avoid consuming metered allowances. No workflow embeds cloud credentials or launches an unguarded paid deployment.
 
 The CI pipeline supports the +1 pipeline bonus, subject to faculty evaluation and successful run evidence. Automated regression tests, trigger-based audit logging, verified recovery and measured query-plan evidence support the additional industry-practice +1 category. These practices are not counted as several separate bonus marks.
 
@@ -197,13 +233,15 @@ The default Vercel and sslip.io addresses are provider hostnames, not a claimed 
 
 ## 13 Faculty demonstration and submission contents
 
-The suggested demonstration starts with final model results, uploads the sample CSV, reopens its saved history and graph, demonstrates feedback CRUD as a researcher, and resolves another note as administrator. The database portion shows the complete ERD, current migration, views, trigger, procedure, actual PostgreSQL tests and native restore evidence. The repository portion shows progressive history, main/dev, private collaboration and the CI run.
+The suggested demonstration starts with final model results and the shared-test comparison, then uploads the sample CSV, reopens its saved history and graph, demonstrates feedback CRUD as a researcher, and resolves another note as administrator. The database portion shows the complete ERD, current migration, views, trigger, procedure, actual PostgreSQL tests and native restore evidence. The repository portion shows progressive history, main/dev, private collaboration and the CI run.
 
 The ZIP includes the PDF report and editable Word report, README and rubric mapping, complete schema/ERD/dictionary sources, screenshots, executed evidence JSON, a credential-free source snapshot and a short submission guide. Large model bundles, production database dumps and infrastructure secrets are excluded. The live demo supplies inference; the reproduction runbooks identify the exact separate artifacts required for offline scoring.
 
 The faculty handout specifies the live URL and engineering requirements, but does not identify a submission portal, email recipient, report template or mandatory filename. The package is prepared for course submission. It has not been sent to the faculty or uploaded to an unspecified course portal.
 
 ## 14 Limitations and future development
+
+The controlled benchmark does not show a consistent gain from attention over concatenation. The three-seed results describe initialization variation on a reused split; they are not independent domain validation or evidence against all existing fraud detectors.
 
 The project is an academic investigation aid with evidence-backed predictions, not a production fraud decision system. The chronological evaluation has nonzero error and moderate PR-AUC; calibration, drift monitoring and independent domain validation would be needed before operational decisions. Attention is descriptive model evidence and is not a causal proof.
 
@@ -224,3 +262,11 @@ GitHub Actions workflow and billing documentation. https://docs.github.com/en/ac
 Vercel domain configuration documentation. https://vercel.com/docs/domains/working-with-domains/add-a-domain
 
 NeuroGraph verified run records and reproduction instructions, included in docs/runs and the inductive/multimodal runbooks. Results from different protocols are reported separately.
+
+Hamilton, W. L., Ying, R. and Leskovec, J. Inductive Representation Learning on Large Graphs. NeurIPS 2017. https://arxiv.org/abs/1706.02216
+
+Liu, Y. and colleagues. RoBERTa A Robustly Optimized BERT Pretraining Approach. 2019. https://arxiv.org/abs/1907.11692
+
+Rayana, S. and Akoglu, L. Collective Opinion Spam Detection Bridging Review Networks and Metadata. KDD 2015. Dataset description and filtering-label limitations: https://shebuti.com/yelpchi-dataset/
+
+Controlled comparison protocol, training logs and results: docs/benchmarks/README.md, protocol.json, comparison.json and results.csv. Average precision is calculated with scikit-learn: https://scikit-learn.org/stable/modules/generated/sklearn.metrics.average_precision_score.html

@@ -1,25 +1,37 @@
 {
-  "date": "2026-10-29",
-  "run_id": 40781489918,
-  "head_sha": "d909bdd0146a9b817e3f0772faa5cdc18b4a2851",
-  "status": "completed",
+  "checked_at_utc": "2026-10-30T21:54:41.086137+00:00",
+  "source_commit": "5a259e9323ae5aafebfc7906670f46a66dfbe61a",
+  "run_id": 41132134731,
+  "url": "https://github.com/Eldo-John-Giby/NeuroGraph-DB/actions/runs/41132134731",
   "conclusion": "success",
-  "url": "https://github.com/Eldo-John-Giby/NeuroGraph-DB/actions/runs/40781489918",
   "jobs": [
     {
       "name": "Build deployable Docker image",
       "status": "completed",
-      "conclusion": "success"
-    },
-    {
-      "name": "FastAPI tests and PostgreSQL database features",
-      "status": "completed",
-      "conclusion": "success"
+      "conclusion": "success",
+      "started_at": "2026-10-30T21:35:10Z",
+      "completed_at": "2026-10-30T21:36:22Z",
+      "html_url": "https://github.com/Eldo-John-Giby/NeuroGraph-DB/actions/runs/41132134731/job/124325417347"
     },
     {
       "name": "Next.js lint build and authentication tests",
       "status": "completed",
-      "conclusion": "success"
+      "conclusion": "success",
+      "started_at": "2026-10-30T21:35:11Z",
+      "completed_at": "2026-10-30T21:36:06Z",
+      "html_url": "https://github.com/Eldo-John-Giby/NeuroGraph-DB/actions/runs/41132134731/job/124325417796"
+    },
+    {
+      "name": "FastAPI tests and PostgreSQL database features",
+      "status": "completed",
+      "conclusion": "success",
+      "started_at": "2026-10-30T21:35:10Z",
+      "completed_at": "2026-10-30T21:37:12Z",
+      "html_url": "https://github.com/Eldo-John-Giby/NeuroGraph-DB/actions/runs/41132134731/job/124325417859"
     }
+  ],
+  "notes": [
+    "Public-repository Linux jobs include real disposable PostgreSQL. Private-model artifact checks are exercised locally; clean CI explicitly skips unavailable private bundles.",
+    "The private mirror skips hosted jobs to avoid metered allowances."
   ]
 }

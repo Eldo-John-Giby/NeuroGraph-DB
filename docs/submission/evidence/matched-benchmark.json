@@ -1,0 +1,59 @@
+{
+  "checked_at_utc": "2026-10-30T21:54:41.097969+00:00",
+  "source_commit": "5a259e9323ae5aafebfc7906670f46a66dfbe61a",
+  "protocol_sha256": "2e2103576474e794729fdd9186aefccbcf69c2625ef44b593331ce96f742054c",
+  "report_sha256": "22e071a1718b40a039bfa746184771ea52193d2c6ac90c487340e6ff22a4ffda",
+  "models": 4,
+  "seeds": [
+    42,
+    43,
+    44
+  ],
+  "recorded_runs": 12,
+  "newly_trained_runs": 11,
+  "reproduced_deployed_runs": 1,
+  "test_rows_per_run": 9436,
+  "test_ids_and_labels_identical_across_runs": true,
+  "scientific_contracts": {
+    "passed": 6,
+    "failed": 0
+  },
+  "backend_local": {
+    "passed": 83,
+    "skipped": 2,
+    "failed": 0,
+    "skip_reason": "Disposable PostgreSQL not configured in this isolated run",
+    "memory_note": "Initial 4 GiB test container hit its memory limit; the 7 GiB retry passed."
+  },
+  "frontend_authentication": {
+    "passed": 10,
+    "failed": 0
+  },
+  "lint": "passed",
+  "production_build": "passed",
+  "production_deployment": {
+    "id": "dpl_41igJuQQQ6GvAigoGXgf58rRtTXo",
+    "url": "https://frontend-three-snowy-10.vercel.app/benchmarks",
+    "ready_state": "READY",
+    "published_report_matches_repository": true
+  },
+  "browser_checks": {
+    "desktop": [
+      1440,
+      1000
+    ],
+    "phone": [
+      390,
+      844
+    ],
+    "page_overflow": false,
+    "seed_switching": "passed",
+    "metric_switching": "passed",
+    "historical_scores_visible": [
+      0.9331,
+      0.8439,
+      0.8105
+    ]
+  },
+  "cloud_resources_added": false
+}

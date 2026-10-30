@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Build the faculty report from public evidence and an ignored private team file.
 
-Use the Codex bundled Python runtime with python-docx and Pillow installed.
-Render/inspect the result with the bundled documents render_docx.py before delivery.
+Requires Python with python-docx and Pillow installed.
+Render and visually inspect the report before distribution.
 """
 from pathlib import Path
 import argparse
@@ -10,6 +10,8 @@ import json
 import re
 import shutil
 import textwrap
+from datetime import datetime, timezone
+from zoneinfo import ZoneInfo
 
 from PIL import Image, ImageDraw, ImageFont
 from docx import Document
@@ -48,16 +50,16 @@ d.text((560,235),'HTTPS / same-origin proxy',font=font(30),fill=gray)
 im.save(assets/'architecture.png',dpi=(300,300))
 
 # Retrospective schedule uses visible repository/deployment milestone ranges.
-im=Image.new('RGB',(2300,1050),'white');d=ImageDraw.Draw(im)
-labels=['Repository and module setup','Data and model integration','Verified schema and evaluation','Cloud deployment and recovery','Workspace and final submission']
-phases=[(0,1),(2,17),(18,19),(22,22),(23,23)]
+im=Image.new('RGB',(2300,1200),'white');d=ImageDraw.Draw(im)
+labels=['Repository and module setup','Data and model integration','Verified schema and evaluation','Cloud deployment and recovery','Workspace and final submission','Matched model evaluation']
+phases=[(0,1),(2,17),(18,19),(22,22),(23,23),(25,25)]
 left=720;top=180;cell=60;rh=135
-for j,day in enumerate(range(6,30)):
+for j,day in enumerate(range(6,32)):
  x=left+j*cell;d.text((x+10,top-85),str(day),font=font(25,True),fill=ink);d.line((x,top,x,top+len(labels)*rh),fill='#e4eae7',width=2)
 d.text((left,35),'OCTOBER 2026',font=font(36,True),fill=teal)
 for i,(label,(start,end)) in enumerate(zip(labels,phases)):
  y=top+i*rh;d.text((20,y+26),label,font=font(34),fill=ink);d.rounded_rectangle((left+start*cell+4,y+20,left+(end+1)*cell-4,y+85),radius=12,fill=teal)
-d.text((20,950),'Retrospective phases anchored in Git history and deployment records.',font=font(28),fill=gray)
+d.text((20,1100),'Retrospective phases anchored in Git history and deployment records.',font=font(28),fill=gray)
 im.save(assets/'gantt.png',dpi=(300,300))
 
 # Domain ER plates contain every current table, with repeated context entities.
@@ -104,9 +106,6 @@ for name,names in groups.items():
  d.text((40,h-26),'Child FK -> parent | Full attributes and nullable relationships: ERD.md and appendix',font=font(20),fill=gray)
  im.save(assets/f'erd-{name}.png',dpi=(300,300))
 assert covered==set(tables),('Missing ERD entities',set(tables)-covered)
-for src,dst in [('redesign-home.png','model-results-live.png'),('redesign-history.png','history-live.png')]:
- if (root/'.deployment'/src).exists() and not (assets/dst).exists():shutil.copyfile(root/'.deployment'/src,assets/dst)
-
 # Formal report, with editable text and a full dictionary appendix.
 doc=Document();sec=doc.sections[0];sec.page_width=Inches(8.5);sec.page_height=Inches(11)
 sec.top_margin=sec.bottom_margin=Inches(.8);sec.left_margin=sec.right_margin=Inches(1)
@@ -161,7 +160,7 @@ p=para('Final Project Submission','Subtitle');p.alignment=WD_ALIGN_PARAGRAPH.CEN
 p=para('A relational review investigation system with verified graph model inference');p.alignment=WD_ALIGN_PARAGRAPH.CENTER
 para('')
 tab(['Team member','Registration number'],[[m[0],m[1]] for m in team['members']],[3.8,2.7])
-tab(['Course details','Confirmed submission information'],[['Course',team['course']+'  '+team['code']],['Class number',team['class_number']],['Lab slot',team['slot']],['Course faculty',team['faculty']],['Submission date','29 October 2026']])
+tab(['Course details','Confirmed submission information'],[['Course',team['course']+'  '+team['code']],['Class number',team['class_number']],['Lab slot',team['slot']],['Course faculty',team['faculty']],['Submission date',datetime.now(ZoneInfo('Asia/Kolkata')).strftime('%d %B %Y')]])
 para('Live application: https://frontend-three-snowy-10.vercel.app')
 para('Private submission source: https://github.com/Avaneeshchavan/neurograph-db-submission')
 doc.add_page_break()
@@ -185,7 +184,7 @@ while i<len(lines):
  if s.startswith('!['):
   m=re.match(r'!\[(.*?)\]\((.*?)\)',s);path=root/'docs/submission'/m.group(2)
   is_erd='/erd-' in str(path)
-  if 'live.png' in str(path):doc.add_page_break()
+  if 'live.png' in str(path) or 'live.jpg' in str(path):doc.add_page_break()
   if is_erd and not str(path).endswith('erd-identity.png'):doc.add_page_break()
   im=Image.open(path);maxw=6.5;maxh=7.5 if is_erd else 6.8
   width=min(maxw,maxh*im.width/im.height)
@@ -238,6 +237,8 @@ para('Credentials are provided separately. Do not project passwords, private key
 doc.core_properties.title='NeuroGraph Database Systems Project'
 doc.core_properties.subject='Database Systems Lab final project submission'
 doc.core_properties.author='Avaneesh Chavan; Eldo John Giby; Anubhav Bhattacharya'
+doc.core_properties.created=datetime.now(timezone.utc)
+doc.core_properties.modified=doc.core_properties.created
 doc.core_properties.comments=''
 # Remove inherited title rules; formal report titles use whitespace only.
 for element in list(doc.styles.element.iter(qn('w:pBdr'))) + list(doc.element.iter(qn('w:pBdr'))):

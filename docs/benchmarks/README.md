@@ -57,7 +57,7 @@ The website displays all three earlier experiment records separately:
 | Earlier raw multimodal | 47,176 rows; stratified random 28,305 / 9,435 / 9,436 split; known nodes | 0.8439 |
 | Deployed inductive checkpoint | 47,176 rows; chronological 28,305 / 9,435 / 9,436 split; temporal replay | 0.8105 |
 
-They are excluded from a shared ranking because the first two have different representations or evaluation rules. Their records remain in [docs/runs](../runs/). The deployed checkpoint is also the NeuroGraph seed-42 arm in the new matched comparison.
+The MAT source is `zhouxuanmingchen/yelp-fraud-processed/YelpChi.mat`; both raw experiments use `samygithub/collective-opinion-spam-detection/training_data.csv`. Their row identities are not interchangeable. They are excluded from a shared ranking because the first two have different representations or evaluation rules. Their records remain in [docs/runs](../runs/). The deployed checkpoint is also the NeuroGraph seed-42 arm in the new matched comparison.
 
 ## Provenance and reproduction
 
@@ -73,7 +73,7 @@ The original checkpoint was GPU-trained; added runs use CPU with the same optimi
 
 ## Interpretation limits
 
-This is a retrospective comparison using the existing holdout, not a new independent blind dataset. Three seeds describe training variation on one fixed split, not uncertainty over all future datasets. The Yelp filtering reference labels are imperfect. Replay can use earlier unlabelled arrivals; a live upload's fixed snapshot and batch can supply less history. New user files without true labels have predictions but no measured accuracy. Attention is not causal proof, and scores are not separately probability-calibrated.
+This is a retrospective comparison using the existing holdout, not a new independent blind dataset. Source timestamps have day-level resolution; review-ID ordering within a day defines a deterministic replay rather than a verified real arrival sequence. Combined-vs-text-only gains may reflect numeric features as well as links; a separate no-link retraining ablation was not measured. Three seeds describe training variation on one fixed split, not uncertainty over all future datasets. The Yelp filtering reference labels are imperfect. Replay can use earlier unlabelled arrivals; a live upload's fixed snapshot and batch can supply less history. New user files without true labels have predictions but no measured accuracy. Attention is not causal proof, and scores are not separately probability-calibrated.
 
 The old 5,000-node synthetic fixture and near-perfect Protocol A/B tables are superseded. Label-conditioned synthetic features and links cannot establish real-data detection or LLM camouflage robustness. See [the provenance audit](../MODEL_AUDIT.md).
 

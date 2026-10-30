@@ -33,6 +33,7 @@ Source snapshot: NeuroGraph_DB_Source.zip
 Current source commit: '''+sha+'''
 
 Live app: https://frontend-three-snowy-10.vercel.app
+Controlled model comparison: https://frontend-three-snowy-10.vercel.app/benchmarks
 Public team source: https://github.com/Eldo-John-Giby/NeuroGraph-DB
 Private course source: https://github.com/Avaneeshchavan/neurograph-db-submission
 
@@ -42,13 +43,22 @@ progressive commit history. Main and dev branches are available on GitHub.
 
 Share the faculty RESEARCHER login separately and privately. No password,
 private key, cloud token or native database dump is included in this ZIP.
-Large verified ML bundles are distributed separately; see the source runbooks.
+Benchmark_results.csv and Benchmark_report.json contain the controlled results.
+The four architectures use the same chronological train/validation/test split.
+The older experiments are historical records, excluded from the matched ranking.
+Concatenation has the highest three-seed mean; NeuroGraph has the highest
+seed-42 macro F1. Neither result establishes universal superiority.
+
+NeuroGraph_DB_ML_Artifacts.zip is a separate private reproduction companion.
+It contains checkpoints, prediction arrays and the sealed serving bundle;
+raw source reviews and pretrained encoder weights are obtained separately.
+See docs/benchmarks/README.md in the source for fingerprints and commands.
 The live application already has its verified bundles installed.
 
 The course handout specifies no submission destination. This package has not
 been emailed or uploaded to a course portal. Use the faculty's prescribed
-portal or channel when it is known. No signed declaration or faculty approval
-has been fabricated.
+portal or channel when it is known. Faculty approval and final portal handover
+follow the course's prescribed process.
 
 Bonus evidence: successful GitHub Actions, automated testing and audit logging.
 Custom domain and Docker Hub publication are not claimed. See the normalization
@@ -57,6 +67,8 @@ section for the explicit physical provenance redundancy qualification.
 (out/'SUBMISSION_GUIDE.txt').write_text(guide)
 files=reports+[source,out/'GIT_HISTORY.txt',out/'SUBMISSION_GUIDE.txt']
 entries={f.name:f for f in files}
+entries['Benchmark_results.csv']=root/'docs/benchmarks/results.csv'
+entries['Benchmark_report.json']=root/'docs/benchmarks/comparison.json'
 for f in (root/'docs/submission').rglob('*'):
  if f.is_file():entries['Evidence/'+str(f.relative_to(root/'docs/submission'))]=f
 manifest={'source_commit':sha,'report_pages':review['pages'],'files':{name:{'bytes':f.stat().st_size,'sha256':hashlib.sha256(f.read_bytes()).hexdigest()} for name,f in entries.items()}}

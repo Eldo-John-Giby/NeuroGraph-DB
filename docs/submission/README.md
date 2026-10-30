@@ -15,6 +15,8 @@ The rubric does not specify an upload portal, filename, report template or elect
 
 The updated [benchmark method and results](../benchmarks/README.md) compares four architectures on the same real-data chronological split and records three training seeds. The report preserves the metric-specific outcome: concatenation has the highest mean, while the deployed NeuroGraph checkpoint has the highest seed-42 macro F1. The old synthetic near-perfect tables are excluded. Published JSON, curves, training logs and artifact manifests accompany the source.
 
+The submission ZIP includes the benchmark CSV and full JSON alongside the report. A separate private `NeuroGraph_DB_ML_Artifacts.zip` contains all twelve matched checkpoints/prediction records and the sealed serving bundle. It is excluded from the small course ZIP and public Git history; raw review text and credentials are excluded from both packages. Extract the companion at the repository root and follow the benchmark runbook for offline reproduction.
+
 ## Evidence interpretation
 
 The project has 23 application tables and 37 FK columns, all represented in the complete generated ERD. Do not use the older 18-table diagrams as the final schema. PostgreSQL views/procedure/trigger are installed by migration 0007. Tests use a disposable database and do not alter production predictions.

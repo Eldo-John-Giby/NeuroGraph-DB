@@ -1,10 +1,11 @@
 {
-  "date": "2026-10-29",
-  "pages": 37,
-  "visual_review": "All 37 pages inspected; two final table adjustments re-rendered and inspected; other page images are byte-identical to reviewed versions.",
+  "date": "2026-10-31",
+  "pages": 41,
+  "visual_review": "All 41 final page images inspected at their original 100-dpi render size. Cover, figures, benchmark tables, screenshots, appendices and rubric matrix checked for clipping and legibility. PDF text bounds and required identifiers/metrics checked.",
   "sha256": {
-    "NeuroGraph_DB_Final_Report.pdf": "dcb40cee5edc32dc845277a96a4659857e2ac585281ec2827f1e9aff6aa95ebc",
-    "NeuroGraph_DB_Final_Report.docx": "fcd9aaa9ea4df426005602681d51695c517a205f35556fca989e2953e90ddf72"
+    "NeuroGraph_DB_Final_Report.pdf": "a5b69b248ba4118c45be27f946418b6b91cfa253b834093c48ae0e9fa7834442",
+    "NeuroGraph_DB_Final_Report.docx": "a65f35168c46e11af5dad9adca8f82266ac02c95f86f9ce21e5bb419c3367f4a"
   },
-  "private_identifiers_in_public_source": false
+  "private_identifiers_in_public_source": false,
+  "out_of_page_text_characters": 0
 }
