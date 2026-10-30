@@ -1,0 +1,57 @@
+.comparison-protocol { padding: 24px; border: 1px solid #d4e2da; border-radius: 18px; background: #f0f6f1; margin: 26px 0 38px; }
+.comparison-protocol p, .comparison-section > p { color: #53665c; line-height: 1.8; margin-top: 16px; }
+.comparison-facts { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 18px; }
+.comparison-facts span { display: block; color: #62756b; font-size: 12px; }
+.comparison-facts strong { display: block; font-family: Georgia, serif; font-size: 34px; font-weight: 400; color: #12685f; margin-top: 5px; }
+.comparison-section { margin: 0 0 46px; padding-top: 32px; border-top: 1px solid #dce4dd; }
+.comparison-section h2 { font-family: Georgia, serif; font-size: clamp(25px, 2.6vw, 36px); color: #23382f; line-height: 1.3; margin-top: 8px; }
+.comparison-heading { display: flex; justify-content: space-between; align-items: center; gap: 24px; }
+.comparison-select { display: flex; flex-direction: column; gap: 7px; color: #53665c; font-size: 12px; min-width: 235px; }
+.comparison-select select { width: 100%; background: white; color: #23382f; border: 1px solid #c7d5cb; border-radius: 8px; padding: 11px 12px; font-size: 13px; }
+.comparison-small { font-size: 12px; color: #6a7c71; line-height: 1.7; }
+.comparison-tabs { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 20px; }
+.comparison-tabs button { border: 1px solid #d0dbd2; border-radius: 24px; background: white; color: #53665c; padding: 9px 16px; font-size: 12px; }
+.comparison-tabs button.selected { background: #12685f; border-color: #12685f; color: white; }
+.comparison-tabs button:focus-visible, .comparison-select select:focus-visible { outline: 3px solid #d29d49; outline-offset: 3px; }
+.comparison-figure { padding: 20px; background: #fffefa; border: 1px solid #dce4dd; border-radius: 14px; margin-top: 20px; min-width: 0; }
+.comparison-figure figcaption { color: #3a5145; font-size: 13px; font-weight: 600; }
+.comparison-figure svg { width: 100%; height: auto; margin-top: 15px; overflow: visible; }
+.comparison-figure svg text { font-family: Arial, sans-serif; font-size: 11px; fill: #65766b; }
+.comparison-figure svg .comparison-value { font-size: 13px; font-weight: 600; fill: #304b3c; }
+.comparison-bar svg { max-height: 360px; }
+.comparison-table-wrap { overflow-x: auto; margin-top: 23px; border: 1px solid #d7e2d9; border-radius: 12px; background: white; }
+.comparison-table { width: 100%; min-width: 730px; border-collapse: collapse; text-align: left; font-size: 13px; }
+.comparison-table caption { caption-side: bottom; text-align: left; padding: 13px 16px; color: #6a7c71; font-size: 11px; }
+.comparison-table th, .comparison-table td { padding: 17px 16px; border-bottom: 1px solid #e3e9e2; }
+.comparison-table thead th { background: #edf3ee; color: #52695a; font-size: 11px; font-weight: 600; }
+.comparison-table tbody th { font-weight: 600; color: #304b3c; }
+.comparison-table td { color: #304b3c; font-variant-numeric: tabular-nums; }
+.comparison-table small { display: block; font-size: 10px; font-weight: 400; margin-top: 5px; color: #718477; }
+.comparison-proposed { background: #f0f8f2; }
+.comparison-model-dot { display: inline-block; height: 8px; width: 8px; border-radius: 50%; margin-right: 8px; }
+.comparison-finding { border-left: 3px solid #12685f; padding: 18px 22px; background: #edf5ef; margin-top: 22px; color: #3f5849; border-radius: 0 10px 10px 0; font-size: 13px; line-height: 1.8; }
+.comparison-models { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin-top: 24px; }
+.comparison-models article, .comparison-history article { background: white; border: 1px solid #dce4dd; border-radius: 12px; padding: 22px; }
+.comparison-models h3, .comparison-history h3 { font-family: Georgia, serif; font-size: 22px; color: #304b3c; margin: 0 0 10px; }
+.comparison-models p, .comparison-history p { font-size: 13px; line-height: 1.8; color: #607366; margin-bottom: 14px; }
+.comparison-models small { color: #75877b; font-size: 11px; }
+.comparison-plots { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
+.comparison-legend { display: flex; flex-wrap: wrap; gap: 10px 16px; font-size: 11px; color: #53665c; }
+.comparison-legend span { display: flex; align-items: center; gap: 7px; }
+.comparison-legend i { height: 3px; width: 16px; display: inline-block; }
+.comparison-history { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; margin-top: 24px; }
+.comparison-tag { display: inline-block; color: #7b664b; background: #f8f1e7; font-size: 10px; padding: 5px 9px; border-radius: 5px; margin-bottom: 13px; }
+.comparison-history dl { margin: 17px 0; }
+.comparison-history dl div { display: flex; justify-content: space-between; gap: 12px; border-bottom: 1px solid #edf0eb; padding: 8px 0; font-size: 12px; }
+.comparison-history dt { color: #6a7c71; }
+.comparison-history dd { color: #304b3c; font-variant-numeric: tabular-nums; }
+.comparison-history .text-action { font-size: 11px; }
+.comparison-evidence ul { list-style: disc; margin: 18px 0 18px 20px; color: #607366; font-size: 13px; line-height: 1.9; }
+.comparison-evidence details { margin-top: 20px; padding: 18px; border: 1px solid #dce4dd; border-radius: 12px; }
+.comparison-evidence summary { cursor: pointer; font-size: 13px; color: #12685f; }
+.comparison-evidence dt { color: #6a7c71; font-size: 11px; margin-top: 15px; }
+.comparison-evidence dd { overflow-wrap: anywhere; font-family: monospace; font-size: 11px; color: #3f5849; }
+.comparison-downloads { display: flex; flex-wrap: wrap; align-items: center; gap: 18px; margin-top: 24px; }
+@media (max-width: 1050px) { .comparison-history { grid-template-columns: 1fr; } .comparison-plots { grid-template-columns: 1fr; } }
+@media (max-width: 700px) { .comparison-facts { grid-template-columns: repeat(2, minmax(0, 1fr)); } .comparison-heading { align-items: stretch; flex-direction: column; gap: 16px; } .comparison-models { grid-template-columns: 1fr; } .comparison-protocol { padding: 18px; } .comparison-figure { padding: 12px; } .comparison-section > p { font-size: 13px; } }
+@media (max-width: 700px) { .comparison-figure svg text { font-size: 18px; } .comparison-bar svg text { font-size: 22px; } .comparison-bar svg .comparison-value { font-size: 22px; } }

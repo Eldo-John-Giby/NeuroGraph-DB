@@ -34,13 +34,13 @@ Open **Products & history**, select the saved filename, and reopen its calculate
 
 Do not promise an autonomous background worker: the current API invokes the processing function while retaining durable job/run state.
 
-## 4. Show supporting research and synthetic examples — one minute
+## 4. Show the controlled comparison and examples — one minute
 
-Open **Benchmark evidence**: this is the earlier raw multimodal known-node experiment, ROC-AUC 0.8439, with a different protocol.
+Open **Model comparison**. Show the four arms on the same test, then select the three-seed mean. Concatenation has the highest mean; the deployed NeuroGraph seed-42 checkpoint has the highest seed-42 macro F1. Show the historical records below the charts and explain why those older experiments are excluded from the matched ranking.
 
 Open **Example investigation**: point out the synthetic-data banner.
 
-> “These pages support the project but serve different purposes. The known-node result is not the final new-upload test, and synthetic restaurant examples are not real model-performance evidence.”
+> “The new comparison keeps data and testing conditions fixed while changing architecture. Historical experiments and synthetic restaurant examples have different purposes and are clearly separated.”
 
 Do not claim a controlled improvement over the structured MAT baseline or quote unmeasured SQL-versus-Neo4j response times.
 

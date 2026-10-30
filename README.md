@@ -14,18 +14,41 @@ Access is by an administrator-provisioned account. Demo credentials are shared p
 2. Open **Upload & analyze**, download the sample CSV, and upload it. The application selects the compatible historical context.
 3. Open **Products & history** to revisit the saved scores and graph without rerunning the model. Identical file retries recover your prior receipt.
 4. Use **Review feedback** to create, edit or remove a submitted investigation note. An administrator can triage or resolve it. Feedback never overwrites predictions.
-5. Use **Benchmark evidence** for known-node experiments and **Example investigation** for clearly marked synthetic case studies.
+5. Open **Model comparison** for the shared-test results and all historical experiments. Use **Example investigation** for clearly marked synthetic case studies.
 
 Researchers see their own upload histories and private records. Administrators explicitly select all-user history and have separate administration menus. Authentication and access checks also run on the server.
 
-## Verified model results
+## Comparable model results
 
-| Evaluation | ROC-AUC | F1 macro | PR-AUC | Scope |
-|---|---:|---:|---:|---|
-| Final inductive model | 0.8105 | 0.6624 | 0.4211 | 9,436 chronological test reviews; new reviews scored against permitted historical context |
-| Multimodal benchmark | 0.8439 | 0.6860 | See verified run record | Known nodes in the frozen YelpChi graph; a different evaluation protocol |
+[Open Model comparison](https://frontend-three-snowy-10.vercel.app/benchmarks) to compare four architectures on exactly the same **9,436 chronological test reviews**. The page has selectable seeds and metrics, ROC/precision–recall curves, missing-context sensitivity, downloadable evidence and all three historical experiment records.
 
-The inductive threshold is 0.7870707071, selected on validation data. Scores on unlabelled user CSVs are predictions, not measured accuracy. Verification records, checksums and reproduction commands are in [docs/runs](docs/runs), [the inductive runbook](docs/INDUCTIVE_YELPCHI_RUNBOOK.md) and [the multimodal runbook](docs/RAW_YELPCHI_MULTIMODAL_RUNBOOK.md). Synthetic examples are never presented as measured model results.
+The shared source has 47,176 labelled real historical reviews: 28,305 training, 9,435 validation and 9,436 test. Every arm uses the same membership and validation-selection rule. Text-enabled arms share the frozen RoBERTa vectors; graph-enabled arms share the 14 features and causal relations. These are controlled architecture ablations with intentionally different modalities and parameter counts.
+
+### Seed 42 and the deployed checkpoint
+
+| Model | ROC-AUC | PR-AUC / AP | Macro F1 |
+|---|---:|---:|---:|
+| Text only | 0.7835 | 0.4035 | 0.6475 |
+| Graph only | 0.7373 | 0.2685 | 0.5974 |
+| Text + graph concatenation | 0.8109 | 0.4213 | 0.6592 |
+| NeuroGraph | 0.8105 | 0.4211 | 0.6624 |
+
+The NeuroGraph row is the **same sealed seed-42 checkpoint used for live CSV scoring**. Its validation-selected cutoff is 0.7870707071. It has the highest seed-42 macro F1; concatenation has slightly higher seed-42 ROC-AUC and average precision.
+
+### Mean and sample SD across seeds 42, 43 and 44
+
+| Model | ROC-AUC | PR-AUC / AP | Macro F1 |
+|---|---:|---:|---:|
+| Text only | 0.7821 ± 0.0015 | 0.4011 ± 0.0024 | 0.6499 ± 0.0022 |
+| Graph only | 0.7389 ± 0.0016 | 0.2687 ± 0.0020 | 0.5983 ± 0.0020 |
+| Text + graph concatenation | 0.8110 ± 0.0034 | 0.4222 ± 0.0099 | 0.6628 ± 0.0034 |
+| NeuroGraph | 0.8084 ± 0.0033 | 0.4154 ± 0.0162 | 0.6589 ± 0.0033 |
+
+Both combined models outperform the single-modality arms in these runs. Concatenation has the highest three-seed mean; the experiment does not establish a consistent gain from NeuroGraph's attention/gate over simple concatenation. SD measures initialization variation, not a confidence interval. The deployed checkpoint was originally GPU-trained; added runs use CPU under the same optimization controls. No production model was replaced based on its test score.
+
+ROC-AUC is not classification accuracy. PR-AUC uses average precision. User CSVs without ground-truth labels have predictions, not measured accuracy. This is a retrospective evaluation on one existing historical holdout with imperfect Yelp filtering labels. Synthetic examples and old near-perfect fixture scores are not real-data benchmark evidence.
+
+The structured MAT baseline (0.9331 ROC-AUC), earlier raw known-node model (0.8439), and deployed temporal model (0.8105) are all visible in **Earlier experiment records** below the matched charts. Their different representations/protocols exclude them from a shared ranking. See the [complete method and evidence](docs/benchmarks/README.md), [model card](docs/MODEL_CARD.md) and [provenance audit](docs/MODEL_AUDIT.md).
 
 ## Stack and architecture
 

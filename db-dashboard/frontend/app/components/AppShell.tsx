@@ -24,7 +24,7 @@ const WORKSPACE: NavItem[] = [
   { label: 'Products & history', href: '/products', glyph: 'products' },
   { label: 'Review records', href: '/reviews', glyph: 'reviews' },
   { label: 'Review feedback', href: '/feedback', glyph: 'audit' },
-  { label: 'Benchmark evidence', href: '/benchmarks', glyph: 'models' },
+  { label: 'Model comparison', href: '/benchmarks', glyph: 'models' },
   { label: 'Example investigation', href: '/examples', glyph: 'graph' },
 ];
 const ADMIN: NavItem[] = [

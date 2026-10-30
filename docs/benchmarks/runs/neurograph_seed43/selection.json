@@ -1,0 +1,6 @@
+{
+  "best_epoch": 76,
+  "test_used_for_selection": false,
+  "threshold": 0.7821212121212121,
+  "validation_f1_macro": 0.6667968681284413
+}

@@ -1,5 +1,7 @@
 # Raw YelpChi multimodal benchmark runbook
 
+For the controlled four-model comparison, use [the current benchmark method](benchmarks/README.md). This runbook preserves the identified experiment and its artifact requirements. Historical scores with different representations/protocols are not a shared ranking.
+
 ## Claim and dataset boundary
 
 This pipeline does **not** use the anonymous 45,954-node `YelpChi.mat` file.

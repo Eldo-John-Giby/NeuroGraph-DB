@@ -99,6 +99,8 @@ def main() -> None:
         shutil.copyfile(BUNDLE / filename, evidence / filename)
     links = [
         ("Read the beginner viva guide", ROOT / "docs/defense/BEGINNER_VIVA_GUIDE.md"),
+        ("Shared-test model comparison and results", ROOT / "docs/benchmarks/README.md"),
+        ("All 12 recorded run metrics", ROOT / "docs/benchmarks/results.csv"),
         ("Start with 12 real labelled examples", data / "START_HERE_12_real_examples.csv"),
         ("Exact training rows: 28,305", data / "train_exact.csv"),
         ("Exact validation rows: 9,435", data / "validation_exact.csv"),

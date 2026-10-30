@@ -6,7 +6,7 @@ runs on Vercel Hobby and forwards `/api/v1` and `/health` to `BACKEND_URL`.
 
 ## Account and cost restriction
 
-Deployment is authorized only while AWS reports account `854784157430` as an
+Deployment is authorized only while AWS reports the intended deployment account as an
 `ACTIVE` `FREE` account plan with at least $10 remaining credit. The provisioning
 and SSM scripts check this through AWS's API. They never upgrade the account or
 purchase support, domains, Marketplace products, or subscriptions.
@@ -32,8 +32,9 @@ the scripts are a deployment check, not a spending limit for a Paid account.
 - `../../scripts/smoke_deployment.py`: public authentication, model results,
   optional CSV scoring, and Neo4j graph verification.
 
-The initial deployment packages the current working tree, including the active
-CSV scoring changes. It does not require a Git push or Render synchronization.
+Deployment packages the checked working tree and does not depend on Render synchronization.
+The recorded model-comparison page and its JSON are frontend assets; publishing
+them does not require new AWS infrastructure or replacing the live checkpoint.
 Verified bundles and database exports are transferred privately, outside Git
 and outside the Docker image. `.deployment/` stores local deployment state and
 credentials with restricted permissions and is ignored by Git.

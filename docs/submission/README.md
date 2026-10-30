@@ -11,6 +11,10 @@ This directory maps the current NeuroGraph-DB application to the Database System
 
 The rubric does not specify an upload portal, filename, report template or electronic submission address. The package is prepared for the faculty; delivery through the course portal or email is not claimed. Faculty access credentials are provided separately and privately.
 
+## Model comparison
+
+The updated [benchmark method and results](../benchmarks/README.md) compares four architectures on the same real-data chronological split and records three training seeds. The report preserves the metric-specific outcome: concatenation has the highest mean, while the deployed NeuroGraph checkpoint has the highest seed-42 macro F1. The old synthetic near-perfect tables are excluded. Published JSON, curves, training logs and artifact manifests accompany the source.
+
 ## Evidence interpretation
 
 The project has 23 application tables and 37 FK columns, all represented in the complete generated ERD. Do not use the older 18-table diagrams as the final schema. PostgreSQL views/procedure/trigger are installed by migration 0007. Tests use a disposable database and do not alter production predictions.

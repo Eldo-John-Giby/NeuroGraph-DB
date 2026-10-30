@@ -1,3 +1,0 @@
-Rewrite the following fake review completely so that it sounds like an authentic, casual, and nuanced customer experience without overtly deceptive or promotional markers.
-Review: {review_text}
-Rewritten Authentic Review:

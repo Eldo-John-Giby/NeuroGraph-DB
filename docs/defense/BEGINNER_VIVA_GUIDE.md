@@ -1,6 +1,6 @@
 # NeuroGraph-DB: understand it before presenting it
 
-Checked against this repository's saved training records and implementation on 29 October 2026. This guide describes the final deployed application. It replaces older defense notes that put synthetic examples first or described unmeasured performance.
+Checked against this repository's saved training records and implementation on 31 October 2026. This guide describes the final deployed application. It replaces older defense notes that put synthetic examples first or described unmeasured performance.
 
 ## 1. Start with this answer: what have we built?
 
@@ -220,7 +220,7 @@ Do **not** say “81.05% accuracy,” “66.24% of all reviews are correct,” �
 
 **Show:** `output/viva/evidence/metrics.json` or `docs/runs/raw_yelpchi_inductive_seed42_20261025T125837Z.json`.
 
-## 11. What is ‘benchmark evidence’? Why are there different results?
+## 11. What is the model comparison and why are there historical results?
 
 A **benchmark** is an experiment with fixed data and known answers, so we can measure a model rather than judge it by how convincing the website looks.
 
@@ -234,11 +234,13 @@ A **benchmark** is an experiment with fixed data and known answers, so we can me
 
 These experiments have different representations and protocols. The largest number is not automatically the best model for new uploads. Do not call this a controlled proof that removing text improves performance, or claim the final model beats the baseline. A fair component comparison would keep data and evaluation conditions the same.
 
-On the current site, **Benchmark evidence** displays the earlier raw multimodal known-node model. **Model results** leads with the final inductive result. That is why 0.8439 and 0.8105 can both appear without referring to the same test setup.
+On the current site, **Model comparison** first evaluates four approaches on the same training, validation and test identities: text-only, graph-only, concatenation and NeuroGraph. These are a fairer architecture comparison because the test reviews and selection rules are shared. Select seed 42 to match the deployed checkpoint, or mean ± SD for seeds 42/43/44. Concatenation has the highest three-seed mean; NeuroGraph has the highest macro F1 for seed 42. We do not claim attention always improves performance.
+
+The three historical experiments in the table above are all visible below the matched charts under **Earlier experiment records**. Their different data representations/protocols exclude them from a shared ranking. **Model results** still shows the deployed seed-42 checkpoint.
 
 Evidence includes saved metrics, model configuration, training history, split identities, a **checkpoint** (saved learned weights), and **SHA-256 hashes** (digital fingerprints of files). A manifest lists expected fingerprints, so serving can reject modified or mismatched files. A fixed review is also rescored and compared within a small tolerance. This checks that the saved model runs consistently; it is not a replacement for testing thousands of labelled reviews.
 
-**Show:** the three JSON records in `docs/runs/`; `fixed_review_reproduction.json`. Old `ml/results_summary.md` and earlier synthetic experiments are not the final real-data result.
+**Show:** the three JSON records in `docs/runs/`; `fixed_review_reproduction.json`. The old synthetic near-perfect tables have been superseded; `ml/results_summary.md` now points to the measured controlled comparison.
 
 ## 12. What is ‘graph context scope’? Why is a snapshot disabled?
 
@@ -454,3 +456,11 @@ The original dataset and large model bundles are local/private files; they are n
 8. **“What if a reviewer/product is completely new?”** The inductive path can encode new text and metadata against an approved historical snapshot; relationship evidence may be sparse. Novel IDs do not guarantee informative neighbors, and performance outside the Yelp domain is unverified.
 9. **“What if model evidence is missing?”** The verified path rejects unavailable/mismatched model artifacts rather than inventing a score. Missing Neo4j can prevent the graph view even if scoring is available.
 10. **“What should be improved next?”** Test more seeds and newer labelled data, compare components under the same split, calibrate scores, study transfer to other domains, and improve the diagnostics/audit UI. Those are future improvements, not already achieved results.
+
+## 24. Why does concatenation sometimes score higher than NeuroGraph
+
+Our new controlled comparison uses the same real training and test reviews for four architectures. Concatenation has the highest average across seeds 42/43/44. NeuroGraph has the highest macro F1 for the deployed seed-42 run. This means the experiment supports combining text and graph information, but does not establish that attention/gating always improves classification.
+
+Say: “We measured rather than assumed the benefit. Both combined models beat the single-modality arms here. Concatenation has the strongest mean, while our deployed checkpoint leads seed-42 macro F1. Our project also contributes saved results, graph inspection and auditable human feedback; we do not claim a universal state-of-the-art detector.”
+
+A fair test can produce a result that does not support an initial hypothesis. Report it and identify the next controlled experiments; do not replace the measured numbers with the old synthetic near-perfect scores.

@@ -1,5 +1,7 @@
 # YelpChi 32-feature GNN baseline runbook
 
+For the controlled four-model comparison, use [the current benchmark method](benchmarks/README.md). This runbook preserves the identified experiment and its artifact requirements. Historical scores with different representations/protocols are not a shared ranking.
+
 ## Scope
 
 This runbook produces an honest **transductive known-node** baseline for the

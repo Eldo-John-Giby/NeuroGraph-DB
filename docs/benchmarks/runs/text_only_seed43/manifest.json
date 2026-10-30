@@ -1,0 +1,10 @@
+{
+  "files": {
+    "checkpoint.pt": "c0b98aec14c119e4cb1be4ff7a37b57051ad212a9f683fe8bd0a1bdb9d9d56ff",
+    "predictions.npz": "51f25f6e6b9ce0ed89eecbb2c398883471d4abca44cc95bad1507613df90523f",
+    "result.json": "69552ffee59de42f1d5af6c8b0757c6d2a76a9712e562aae4a12d78b75033d0f",
+    "selection.json": "4422d30bb8ff415e2846f1db22ae970c596d05bc67f6e24519e60e4619cf6460",
+    "training_log.json": "c1bad158903783b472fb9f527de53751da17a2cdf0ca5749e3ce0603490322f3"
+  },
+  "protocol_sha256": "2e2103576474e794729fdd9186aefccbcf69c2625ef44b593331ce96f742054c"
+}

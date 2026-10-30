@@ -1,0 +1,9 @@
+ARG BASE_IMAGE=neurograph-api:deploy
+FROM ${BASE_IMAGE}
+RUN python -m pip install --no-cache-dir --index-url https://download.pytorch.org/whl/cpu torch==2.15.0+cpu
+RUN python -m pip install --no-cache-dir \
+    numpy==2.4.6 pandas==2.3.3 scipy==1.17.1 \
+    torch-geometric==2.8.1 transformers==4.57.6 scikit-learn==1.7.2 \
+    pytest==8.4.2 httpx==0.28.1
+ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1
+WORKDIR /repo

@@ -1,5 +1,7 @@
 # Inductive YelpChi Multimodal Benchmark Runbook
 
+For the controlled four-model comparison, use [the current benchmark method](benchmarks/README.md). This runbook preserves the identified experiment and its artifact requirements. Historical scores with different representations/protocols are not a shared ranking.
+
 ## Model Family: `raw_yelpchi_inductive_roberta_gnn_v1`
 
 This document specifies the honest inductive replay training pipeline for NeuroGraph-DB. It provides a leak-free evaluation protocol for streaming arrival fraud detection without reusing transductive graph shortcuts.

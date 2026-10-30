@@ -1,5 +1,7 @@
 # YelpChi multimodal training runbook
 
+**Scope:** an earlier proposed raw-text/MAT alignment route, not the source of the three reported real-data experiments. The executed raw model uses its own 47,176-row graph; see [the raw runbook](RAW_YELPCHI_MULTIMODAL_RUNBOOK.md). For the current comparable results use [the matched benchmark](benchmarks/README.md).
+
 ## Hard gate: verify identity before training
 
 `YelpChi.mat` in the verified GNN bundle has 45,954 nodes. The raw-text corpus

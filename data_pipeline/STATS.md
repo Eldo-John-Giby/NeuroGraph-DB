@@ -1,32 +1,12 @@
-# YelpChi Dataset & Graph Statistics
+# Dataset statistics
 
-## 1. Node and Label Distribution
+| Source | Rows | Role |
+|---|---:|---|
+| Raw labelled YelpChi CSV | 47,176 | Current real-data training/evaluation source |
+| Chronological training partition | 28,305 | Learn trainable model weights and metadata scaler |
+| Chronological validation partition | 9,435 | Choose checkpoint and cutoff |
+| Chronological test partition | 9,436 | Shared test for the controlled comparison |
+| Downloaded unlabelled testing CSV | 20,219 | Excluded from supervised metrics |
+| Earlier structured YelpChi MAT | 45,954 | Separate historical numeric-feature benchmark |
 
-| Metric | Value |
-| :--- | :--- |
-| **Total Reviews ($N$)** | 5,000 |
-| **Benign Reviews ($y=0$)** | 4,250 (85.0%) |
-| **Spam / Fraud Reviews ($y=1$)** | 750 (15.0%) |
-| **Unique Users** | ~2,000 |
-| **Unique Products** | ~500 |
-| **Feature Dimensions** | Semantic $\mathbf{x}_{\text{sem}} \in \mathbb{R}^{768}$, Behavioral $\mathbf{x}_{\text{meta}} \in \mathbb{R}^{32}$ |
-
----
-
-## 2. Multi-Relational Graph Topologies
-
-| Relation Code | Relation Semantic | Average Degree | Edge Density |
-| :--- | :--- | :--- | :--- |
-| **$R_{RUR}$** | Review-User-Review (Same Reviewer) | 4.2 | Sparse, Homophilic |
-| **$R_{RSR}$** | Review-Same Rating-Review (Same Product & Rating) | 8.6 | Dense Clusters |
-| **$R_{RTR}$** | Review-Temporal-Review (Same Product $\le$ 30 Days) | 5.1 | Temporal Bursts |
-
----
-
-## 3. Train / Val / Test Partitioning
-
-| Split | Node Count | Benign Count | Spam Count | Spam % |
-| :--- | :--- | :--- | :--- | :--- |
-| **Train** | 3,000 | 2,550 | 450 | 15.0% |
-| **Val** | 1,000 | 850 | 150 | 15.0% |
-| **Test** | 1,000 | 850 | 150 | 15.0% |
+The labelled source contains 6,243 Y/spam and 40,933 N/nonspam labels. The source filename is `training_data.csv`; its rating mapping uses `rating_OhNo`. See the [model card](../docs/MODEL_CARD.md) for the exact fingerprint. The legacy 5,000-row fixture is synthetic and is not a sampled real YelpChi subgraph.

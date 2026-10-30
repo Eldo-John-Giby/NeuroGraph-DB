@@ -314,8 +314,8 @@ export function VerifiedBenchmarkSection({ compact = false }: { compact?: boolea
               </div>
 
               <p className="text-[10px] text-[#839089] leading-relaxed">
-                Frozen 768-dim masked-mean RoBERTa text vectors are projected into 3 GraphSAGE relation channels
-                and cross-attended using text-conditioned query keys.
+                Frozen RoBERTa encodes review text. Separate GraphSAGE branches encode numeric review features
+                and relationships; text-conditioned attention combines the three branches.
               </p>
             </div>
           </div>

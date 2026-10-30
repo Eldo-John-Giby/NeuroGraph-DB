@@ -26,7 +26,7 @@ Seed 42, hidden dimension 128, dropout 0.2, AdamW, learning rate 0.001, weight d
 
 Final inductive test ROC-AUC **0.8105**, macro F1 **0.6624**, PR-AUC/average precision **0.4211**. Validation-selected threshold **0.7870707071**, chosen from 199 candidate cutoffs using macro F1. Explain false positives, false negatives, and why ROC-AUC is not ordinary accuracy. Scores are not separately calibrated probabilities.
 
-## 7. Supporting benchmarks
+## 7. Controlled comparison and historical benchmarks
 
 | Experiment | ROC-AUC | Macro F1 | Boundary |
 |---|---:|---:|---|
@@ -34,7 +34,7 @@ Final inductive test ROC-AUC **0.8105**, macro F1 **0.6624**, PR-AUC/average pre
 | Raw multimodal known-node model | 0.8439 | 0.6860 | 47,176 raw reviews, fixed known-node graph, random stratified split |
 | Final inductive model | 0.8105 | 0.6624 | Chronological new-arrival evaluation |
 
-Different protocols and representations prevent an apples-to-apples superiority claim. Show run records, manifests and fixed-review reproduction as evidence, not a guarantee of every future prediction.
+The historical rows above are excluded from the new matched ranking. Open Model comparison for text-only, graph-only, concatenation and NeuroGraph on the same split. Show seed 42 and mean/sample SD across 42/43/44. Concatenation has the highest mean; NeuroGraph has the highest seed-42 macro F1. Show per-run records and do not claim universal superiority or accuracy on a new unlabelled file.
 
 ## 8. Databases and architecture
 

@@ -1,52 +1,49 @@
-# NeuroGraph-DB FastAPI backend
+# FastAPI backend
 
-Phase 3 backend implementation target: PostgreSQL, SQLAlchemy 2.x, Alembic, FastAPI, Argon2id password hashes, short-lived signed access tokens, and hashed rotating refresh credentials in `session_tokens`.
+The deployed API uses Python 3.11, FastAPI, SQLAlchemy 2, Alembic, PostgreSQL 16, Neo4j 5 and verified CPU model runtimes. The authoritative schema has 23 domain tables through migration `0007_database_features`.
 
-## Local setup
+## Run locally
 
-```bash
+Follow the [root installation guide](../README.md). From the repository root, install `./backend[test,deploy]` in a virtual environment. Configure an ignored `backend/.env` using `.env.example`, then:
+
+```sh
 cd backend
-python -m venv .venv
-source .venv/bin/activate
-pip install -e '.[test]'
-cp .env.example .env
-# Set DATABASE_URL and a random JWT_SECRET_KEY of at least 32 characters.
 alembic upgrade head
-BOOTSTRAP_ADMIN_EMAIL=admin@example.edu BOOTSTRAP_ADMIN_PASSWORD='use-a-long-unique-password' python scripts/seed_roles.py
-uvicorn app.main:app --reload
+python scripts/seed_roles.py
+# Provide ADMIN_PASSWORD and RESEARCHER_PASSWORD privately.
+python scripts/seed_users.py
+uvicorn app.main:app --host 127.0.0.1 --port 8000
 ```
 
-`GET /health/live` checks only that the API process responds. `GET /health/ready` also checks PostgreSQL and queries for verified-real model/preprocessing registrations; a registration does not make the service ready because no scoring runtime is loaded. A configured Neo4j URI is reported as `configured_unverified` until a real connection check and sync worker exist. `POST /api/v1/graph-sync-jobs` persists review or snapshot jobs; no worker is included, so jobs remain queued and the status endpoint reports that truthfully.
+Use `COOKIE_SECURE=false` only for HTTP localhost. Production cookies remain Secure/HttpOnly. Database credentials, signing secrets and cloud tokens do not belong in frontend configuration.
 
-Refresh cookies are `Secure`, `HttpOnly`, and `SameSite=Strict` by default. For local HTTP-only development, explicitly set `COOKIE_SECURE=false`; use HTTPS anywhere credentials leave a developer machine.
+## Implemented workflows
 
-## Inference state
+- Authentication, rotating refresh sessions, logout and role checks.
+- Validated CSV intake, canonical identities, source-scoped duplicate handling and per-user receipts.
+- Verified inductive scoring of new CSV rows, durable job/run records and saved evidence.
+- Private history and results; explicit admin access to all-user history.
+- Neo4j projection of the relationships used by a saved analysis.
+- Review feedback CRUD and administrator moderation using a PostgreSQL procedure.
+- Aggregate views and transactional redacted feedback audit trigger.
+- Separate known-node reference runtimes and clearly labelled synthetic examples.
 
-Inference fails closed before creating a run or prediction. Status and eligibility read model provenance, lifecycle, checkpoint fields, and preprocessing lifecycle from PostgreSQL. Only `real` provenance is eligible for real inference. `synthetic_demo` models cannot be verified and are not served by the real inference endpoint. A DB-verified real model would still return `503 model_runtime_unavailable` until a compatible runtime is loaded. `artifacts/models/neurograph_best.pt` remains unverified: there is no matching training manifest or checkpoint-linked threshold/preprocessing version, and a direct forward pass does not reproduce the saved predictions (closest saved NeuroGraph clean/clean run has mean absolute score difference about `0.2603`). The available graph has been audited as synthetic. The backend does not convert a candidate file or historical parquet into a response.
+The processing endpoint calls the worker function synchronously while preserving durable job state. An autonomous background worker and automatic model retraining are not claimed.
 
-The implemented interface accepts only known review IDs and the design restricts registered inference mode to `known_node_only`; no unseen-review path is provided. A model runtime adapter and registration workflow must remain disabled until an owner supplies a verifiable checkpoint/config/preprocessing/graph/run bundle.
+## Model artifacts
 
-## CSV batch intake
+The current model family is `raw_yelpchi_inductive_roberta_gnn_v1`; registration and exact bundle requirements are documented in the [inductive runbook](../docs/INDUCTIVE_YELPCHI_RUNBOOK.md). Missing/mismatched bundles fail closed. Historical model records are not substitutes for checkpoints, encoder files or serving graphs.
 
-`POST /api/v1/batch-analyses` accepts the six-column review CSV described in [BATCH_ANALYSIS.md](../docs/BATCH_ANALYSIS.md). Accepted rows and per-row validation outcomes are persisted transactionally; reviewer/product external keys are resolved inside the submitted `source_system`. Use the batch status and paginated results endpoints to inspect partial validation. An ADMIN must explicitly permit an available graph snapshot before it can be selected as historical context. Batch scoring is currently blocked: no batch creates an `inference_runs` row or score unless a real verified model/preprocessing/graph tuple and compatible loaded runtime exist. Provider protocols are defined for RoBERTa embeddings and manifest-ordered behavioral features; `backend/app/services/batch_graph.py` has a label-free in-memory RUR/RSR/RTR edge builder. No scoring providers or Neo4j batch writer are active.
+The [controlled comparison](../docs/benchmarks/README.md) is a recorded scientific report rendered by the frontend. It reuses the deployed seed-42 checkpoint without changing stored production predictions.
 
-## Tests and migrations
+## Checks
 
-```bash
+```sh
 cd backend
-python -m pytest -q
+PYTHONPATH=..:. pytest
 alembic heads
 ```
 
-The tests use SQLite in memory for API/auth/integrity behavior. They do not replace PostgreSQL migration, transaction, or concurrency verification. Use PostgreSQL before treating database behavior as production-ready.
+Private-bundle integration tests skip when their exact bundles are absent. PostgreSQL-specific tests require `TEST_POSTGRES_URL` to identify an empty disposable database and refuse one containing users. SQLite tests do not replace those PostgreSQL checks.
 
-## Synthetic UI demo seed
-
-After applying Alembic migrations, an explicitly opted-in local demo can be seeded with:
-
-```bash
-cd backend
-DEMO_MODE=true python scripts/seed_demo_batch.py
-```
-
-The script creates 50 `reviewers` (review authors, not app-login `users`), 10 products, 200 synthetic reviews, and one `synthetic_demo` model/run with generated scores and demo attention weights. The model remains `registered` and has no checkpoint; the run's synthetic provenance and attention payload identify the values as generated display data. No Neo4j graph is written. Do not describe these values as model predictions or performance evidence. The script refuses to run unless `DEMO_MODE=true`.
+`/health/live` is process liveness. The generic `/health/ready` retains a separate legacy inference contract; use `/api/v1/verified-inductive/status` and an actual successful inference for the active model runtime. The Audit operations screen is diagnostics, not a complete audit-log viewer.

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import "./workspace-refresh.css";
+import "./comparison.css";
 import { AuthProvider } from "./context/AuthContext";
 
 export const metadata: Metadata = {

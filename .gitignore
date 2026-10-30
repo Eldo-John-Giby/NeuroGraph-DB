@@ -1,11 +1,5 @@
 artifacts/*
 !artifacts/.gitkeep
-!artifacts/models/
-!artifacts/models/neurograph_best.pt
-!artifacts/graph/
-!artifacts/graph/yelpchi_graph.pt
-!artifacts/scalers/
-!artifacts/scalers/**
 __pycache__/
 *.pyc
 .env
@@ -13,8 +7,6 @@ __pycache__/
 .ipynb_checkpoints/
 .kaggle/
 *.pt
-!artifacts/models/neurograph_best.pt
-!artifacts/graph/yelpchi_graph.pt
 *.npy
 *.parquet
 *.sql.gz
@@ -41,4 +33,5 @@ db-dashboard/frontend/node_modules/
 .pytest_cache/
 tmp/
 output/
+ml/figures/
 submission-private/

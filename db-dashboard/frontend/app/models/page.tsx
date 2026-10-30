@@ -299,7 +299,7 @@ export default function ModelEvaluationPage() {
                   <div>
                     <div className="flex flex-wrap items-center gap-2.5">
                       <h3 className="text-base font-bold text-white">
-                        Model Inference Engine
+                        Historical known-node runtime
                       </h3>
                       <StatusBadge
                         status={inferenceStatus.status}
@@ -357,6 +357,7 @@ export default function ModelEvaluationPage() {
         {/* ================================================================== */}
         {/* VERIFIED BENCHMARK SECTION: Labelled Raw YelpChi Multimodal GNN   */}
         {/* ================================================================== */}
+        <p className="notice-card">This status describes the earlier known-node runtimes. The deployed new-review model is shown on Model results. Open <a className="text-action" href="/benchmarks">Model comparison</a> for all four models evaluated on the same chronological test set.</p>
         <VerifiedBenchmarkSection />
 
         {/* ================================================================== */}

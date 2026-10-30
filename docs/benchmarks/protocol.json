@@ -1,0 +1,132 @@
+{
+  "class_counts": {
+    "test": {
+      "nonspam": 8185,
+      "spam": 1251
+    },
+    "train": {
+      "nonspam": 24583,
+      "spam": 3722
+    },
+    "validation": {
+      "nonspam": 8165,
+      "spam": 1270
+    }
+  },
+  "code_sha256": {
+    "ml/benchmark_matched.py": "597ea6f04393bb3f835a0909e817e07ddeda75c2a2be866d029d0ad767d61397",
+    "ml/models/matched_baselines.py": "e4ff1ddba47cc8a4bc43a75d4de793b9109f7db1ab00a646eac26deaa836f0ee",
+    "ml/models/roberta_relation_gnn.py": "0e86449ca097118139b949025e86a9ceabd5aa37ad69c378c39e4423dee73952"
+  },
+  "created_at": "2026-10-30T20:55:03.085263+00:00",
+  "dataset": "samygithub/collective-opinion-spam-detection/training_data.csv",
+  "edge_counts": {
+    "rsr": 1658662,
+    "rtr": 450271,
+    "rur": 54338
+  },
+  "evaluation_targets_sha256": "d5176117a9eea1848da454f2c72aa9e058065a9ff73d7c9e185b188308b78227",
+  "feature_names": [
+    "rating",
+    "log_prior_reviewer_review_count",
+    "log_prior_product_review_count",
+    "log_character_count",
+    "log_word_count",
+    "uppercase_ratio",
+    "digit_ratio",
+    "punctuation_ratio",
+    "exclamation_count",
+    "question_count",
+    "month_sin",
+    "month_cos",
+    "weekday_sin",
+    "weekday_cos"
+  ],
+  "limitations": [
+    "Retrospective comparison on the existing chronological holdout, not a new independent dataset.",
+    "Three seeds vary initialization, not dataset membership; standard deviation is not a confidence interval.",
+    "Seed-42 deployed model was originally GPU-trained; added runs train on CPU with the same optimization settings.",
+    "Architecture ablations change inputs and parameter counts; they do not compare all published fraud detectors.",
+    "Yelp filtering labels are imperfect; performance on unlabelled user files or other domains is unmeasured."
+  ],
+  "models": {
+    "concat": "The same text and graph branches joined by concatenation; no text-conditioned relation attention or learned fusion gate.",
+    "graph_only": "Fourteen numeric features and three GraphSAGE branches with learned global relation weights; no text embeddings.",
+    "neurograph": "Deployed architecture: RoBERTa, three metadata GraphSAGE branches, text-conditioned relation attention and gated fusion.",
+    "text_only": "Frozen RoBERTa text embeddings and an MLP; no metadata or graph inputs."
+  },
+  "node_identity_sha256": "490432fde82d41f8ad02fd92f49f43585ff0c7d17e42edceec6b437679988d9b",
+  "protocol_id": "yelpchi-temporal-matched-v1",
+  "relations": {
+    "rsr": "same product and rating, historic to candidate, capped at 50",
+    "rtr": "same product within 30 days, historic to candidate, capped at 50",
+    "rur": "same reviewer, historic to candidate, capped at 50"
+  },
+  "seeds": [
+    42,
+    43,
+    44
+  ],
+  "serving_graph_sha256": "6f4c57859f7e334b33fa2f89c34aa1e0ca095abbca64c35751a07782bd29aa10",
+  "source_manifest_sha256": "9d4f10a81937987ae7588d86e29191d355af296c6efc29ec3e5b331282d23edd",
+  "source_run": "raw_yelpchi_inductive_seed42_20261025T125837Z",
+  "source_sha256": "dbd3769b608bf249ed484f87d291e5d73f4988fd33e26f1bb96a50e8cdd418c8",
+  "split_counts": {
+    "test": 9436,
+    "train": 28305,
+    "validation": 9435
+  },
+  "split_windows": {
+    "test_window": [
+      "2011-11-15T00:00:00+00:00",
+      "2012-10-08T00:00:00+00:00"
+    ],
+    "train_window": [
+      "2004-10-23T00:00:00+00:00",
+      "2011-02-06T00:00:00+00:00"
+    ],
+    "validation_window": [
+      "2011-02-06T00:00:00+00:00",
+      "2011-11-15T00:00:00+00:00"
+    ]
+  },
+  "stress_test": {
+    "edge_drop_fractions": [
+      0.1,
+      0.3,
+      0.5
+    ],
+    "label_blind": true,
+    "name": "Missing graph context",
+    "scope": "Edge removal sensitivity; not a validated adversarial or LLM camouflage test",
+    "seed": 20261031,
+    "threshold_retuned": false
+  },
+  "training": {
+    "checkpoint_selection": "validation macro F1",
+    "dropout": 0.2,
+    "hidden_dim": 128,
+    "learning_rate": 0.001,
+    "loss": "train-class-weighted cross entropy",
+    "max_epochs": 80,
+    "optimizer": "AdamW",
+    "patience": 12,
+    "scaler_fit": "train only",
+    "seed42_neurograph": "Original sealed deployed checkpoint, no retraining or test-based replacement",
+    "test_used_for_selection": false,
+    "text_encoder": {
+      "frozen": true,
+      "max_length": 192,
+      "model_name": "FacebookAI/roberta-base",
+      "pooling": "attention_masked_mean",
+      "requested_revision": "e2da8e2f811d1448a5b465c236feacd80ffbac7b",
+      "resolved_revision": "e2da8e2f811d1448a5b465c236feacd80ffbac7b"
+    },
+    "threshold_grid": {
+      "count": 199,
+      "max": 0.99,
+      "min": 0.01
+    },
+    "weight_decay": 0.0001
+  }
+}

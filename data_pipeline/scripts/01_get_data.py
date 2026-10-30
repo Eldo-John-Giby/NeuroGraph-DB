@@ -1,5 +1,5 @@
 """
-Download or generate standard YelpChi raw dataset into data_pipeline/raw/
+Legacy synthetic fixture generator into data_pipeline/raw/. Does not download YelpChi.
 Columns: review_id, user_id, prod_id, rating, review_date, review_text, label
 """
 
@@ -22,7 +22,7 @@ def generate_standard_yelpchi(
     spam_ratio: float = 0.15,
     seed: int = 42
 ) -> pd.DataFrame:
-    """Generates standard YelpChi review dataset."""
+    """Generate artificial review fixtures; never use as real-data evidence."""
     rng = np.random.default_rng(seed)
     raw_dir = get_raw_dir()
     out_csv = os.path.join(raw_dir, "yelpchi_reviews.csv")

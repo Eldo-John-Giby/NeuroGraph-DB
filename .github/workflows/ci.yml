@@ -47,6 +47,11 @@ jobs:
           OMP_NUM_THREADS: '2'
           TEST_POSTGRES_URL: postgresql+psycopg://ci:disposable-ci-password@localhost:5432/neurograph_ci
         run: pytest
+      - name: Check matched benchmark scientific contracts
+        env:
+          PYTHONPATH: .
+          OMP_NUM_THREADS: '2'
+        run: python -m unittest ml.tests.test_matched_benchmark
   frontend:
     name: Next.js lint build and authentication tests
     if: github.event.repository.private == false
