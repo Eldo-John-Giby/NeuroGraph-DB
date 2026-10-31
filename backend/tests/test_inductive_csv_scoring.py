@@ -506,13 +506,56 @@ def test_restaurant_csv_does_not_expect_labels(client, reader_token, seeded_indu
     with client._testing_session_factory() as session:
         rev = session.scalar(
             select(Review).where(
-                Review.source_system == "restaurant-live",
+                Review.source_system == upload.json()["source_system"],
                 Review.source_review_key == "unlabeled-1",
             )
         )
         assert rev is not None
         assert rev.ground_truth_label is None
         assert rev.label_source is None
+
+
+@pytest.mark.parametrize('field,bad_value', [
+    ('context_scope_key', 'wrong-scope'),
+    ('relation_schema_version', 'wrong-schema'),
+])
+def test_snapshot_requires_both_scope_and_schema_at_upload_and_score(
+    client, reader_token, seeded_inductive_environment, field, bad_value,
+):
+    headers = {'Authorization': f'Bearer {reader_token}'}
+    snapshot_id = seeded_inductive_environment['snapshot_id']
+    csv_content = b'review_id,reviewer_id,product_id,rating,review_date,review_text\nr1,u1,p1,4,2012-01-01,A review for scope verification.\n'
+    data = {'source_system': 'scope-check', 'historic_graph_snapshot_id': str(snapshot_id)}
+    original = client.post('/api/v1/batch-analyses', headers=headers, data=data,
+                           files={'file': ('reviews.csv', csv_content, 'text/csv')})
+    assert original.status_code == 201
+    with client._testing_session_factory() as session:
+        setattr(session.get(GraphSnapshot, snapshot_id), field, bad_value)
+        session.commit()
+    # Different bytes exercise validation instead of receipt recovery.
+    rejected = client.post('/api/v1/batch-analyses', headers=headers, data=data,
+                           files={'file': ('reviews.csv', csv_content.replace(b'r1,', b'r2,'), 'text/csv')})
+    assert rejected.status_code == 409
+    assert rejected.json()['error']['code'] == 'snapshot_scope_incompatible'
+    scored = client.post(f"/api/v1/batch-analyses/{original.json()['batch_analysis_id']}/score", headers=headers)
+    assert scored.status_code == 409
+    assert scored.json()['error']['code'] == 'snapshot_scope_incompatible'
+
+
+@pytest.mark.parametrize('scope,schema', [
+    ('wrong-scope', 'inductive-rur-rsr-rtr-v1'),
+    ('inductive-rur-rsr-rtr-v1', 'wrong-schema'),
+    (None, 'inductive-rur-rsr-rtr-v1'),
+])
+def test_runtime_independently_rejects_partially_matching_snapshot(scope, schema):
+    from types import SimpleNamespace
+    from app.services.inductive_yelpchi import InductiveYelpChiRuntime, ScopeIncompatibilityError
+    runtime = InductiveYelpChiRuntime()
+    runtime._verified = True
+    runtime._prep_config = {'relation_policy': 'inductive-rur-rsr-rtr-v1'}
+    snapshot = SimpleNamespace(context_scope_key=scope, relation_schema_version=schema)
+    with pytest.raises(ScopeIncompatibilityError):
+        runtime.score_batch([object()], None, snapshot)
 
 
 def test_context_query_excludes_ground_truth_and_label_source(client, seeded_inductive_environment):

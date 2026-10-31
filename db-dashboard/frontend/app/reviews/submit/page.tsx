@@ -70,8 +70,8 @@ function compatible(snapshot: Snapshot) {
     snapshot.batch_context_permitted &&
     snapshot.storage_status === "available" &&
     snapshot.provenance === "real" &&
-    (snapshot.context_scope_key === "inductive-rur-rsr-rtr-v1" ||
-      snapshot.relation_schema_version === "inductive-rur-rsr-rtr-v1")
+    snapshot.context_scope_key === "inductive-rur-rsr-rtr-v1" &&
+    snapshot.relation_schema_version === "inductive-rur-rsr-rtr-v1"
   );
 }
 

@@ -71,3 +71,16 @@ def test_inductive_status_fails_closed_when_bundle_is_unavailable(client, reader
     status = client.get('/api/v1/verified-inductive/status', headers={'Authorization': f'Bearer {reader_token}'}).json()
     assert status['available'] is False
     assert 'metrics' not in status
+
+
+def test_legacy_receipt_retry_is_preserved_only_for_its_original_owner(client, reader_token, admin_token):
+    original = upload(client, reader_token)
+    with client._testing_session_factory() as db:
+        db.get(BatchAnalysis, original['batch_analysis_id']).source_system = 'history-test'
+        db.commit()
+    retried = upload(client, reader_token)
+    assert retried['batch_analysis_id'] == original['batch_analysis_id']
+    assert retried['reused_existing_batch']
+    separate = upload(client, admin_token)
+    assert separate['batch_analysis_id'] != original['batch_analysis_id']
+    assert separate['source_system'] != 'history-test'

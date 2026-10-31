@@ -43,6 +43,10 @@ All use hidden width 128, dropout 0.2, AdamW at learning rate 0.001, weight deca
 
 This is a controlled architecture ablation, not a claim that every model receives identical modalities or is an equal-parameter replica. The earlier 32-feature MAT checkpoint is not renamed as the new 14-feature graph-only arm.
 
+### Training-budget limitation
+
+One epoch is one full-batch gradient update. All nine text-enabled runs (text-only, concatenation and NeuroGraph across three seeds) completed the 80-epoch cap. Graph-only stopped after 38, 41 and 54 epochs. Some validation trajectories were still improving at the cap. These are fixed-budget results, not evidence that all architectures converged or that their convergence rates were equal. No longer-budget rerun was performed for this submission, and the sealed serving checkpoint is unchanged. The seed-42 NeuroGraph result's `environment.device: cpu` describes its benchmark reproduction device; its original checkpoint was GPU-trained.
+
 ## Missing graph context
 
 The frozen models are additionally evaluated after independently removing each link with probability 0.1, 0.3 or 0.5, with a fixed label-independent seed. Cutoffs are retained; no adversarial retraining occurs. Text-only results remain unchanged because text-only consumes no graph. This measures missing-context sensitivity. It does not demonstrate robustness to real coordinated attackers or LLM rewrites.

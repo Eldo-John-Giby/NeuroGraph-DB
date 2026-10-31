@@ -155,9 +155,13 @@ The graph initially shows all relation types and counts only links drawn between
 
 ### Controlled model comparison
 
+For ordinary user files, the live relational context is earlier rows within that upload: user-specific author/product identities do not join to the Yelp reference identities. The approved snapshot gates compatibility and eligibility but does not supply unrelated business history. Small-batch cold-context accuracy has not been separately measured, and uploads predating eligible reference history may fail. Source namespaces are assigned server-side per authenticated uploader; identical filenames and external IDs cannot collide across new users' imports. Existing saved receipts remain accessible.
+
 The Model comparison page at /benchmarks addresses the earlier lack of a like-for-like architecture comparison. All four arms share the exact 47,176 raw review identities, chronological train/validation/test membership, source label mapping and validation-selection objective. The test has 9,436 reviews, including 1,251 spam and 8,185 nonspam labels. Text-enabled arms share the frozen RoBERTa vectors; graph-enabled arms share the same 14 features and causal RUR/RSR/RTR edges. Input modalities and trainable parameter counts intentionally differ as architecture ablations.
 
 For seed 42, the NeuroGraph arm reuses the sealed deployed checkpoint and reproduces its recorded metrics within 1e-6. The other arms are trained under the fixed plan. Seeds 43 and 44 provide additional training initializations without changing dataset membership. All use hidden width 128, dropout 0.2, AdamW learning rate 0.001, weight decay 0.0001, class-weighted cross entropy, a maximum of 80 epochs and patience 12. The selected epoch and one of 199 cutoffs are chosen by validation macro F1 before test metrics are calculated.
+
+This is a fixed-budget, not confirmed-convergence comparison. Each full-batch epoch is one gradient update; all nine text-enabled runs reached 80 epochs, while graph-only stopped after 38–54. Some validation curves were still improving, so differences can reflect convergence speed. No longer-budget experiment or model replacement is claimed.
 
 | Seed 42 architecture | ROC-AUC | Average precision | Macro F1 |
 |---|---:|---:|---:|
@@ -167,6 +171,8 @@ For seed 42, the NeuroGraph arm reuses the sealed deployed checkpoint and reprod
 | NeuroGraph | 0.8105 | 0.4211 | 0.6624 |
 
 NeuroGraph has the highest macro F1 for seed 42. Concatenation has slightly higher seed-42 ROC-AUC and average precision. These metric-specific observations are not a universal superiority claim.
+
+At the deployed cutoff, the test confusion counts are TP 553, FP 834, TN 7,351 and FN 698. Flag precision is 39.9% and recall 44.2%; ROC-AUC must not be mistaken for precision or accuracy. A low-spam-prevalence file can have a larger proportion of false-positive flags, and domain transfer is unmeasured. The UI states this beside the flag summary and suppresses relation-gate percentages for relations with no eligible neighbors. Gate weights are across three relation types, not individual-neighbor attention or causal proof.
 
 | Architecture across 3 seeds | ROC-AUC mean and SD | AP mean and SD | Macro F1 mean and SD |
 |---|---:|---:|---:|
@@ -209,9 +215,9 @@ The cloud patch also retained a native database export and the previous backend 
 
 | Check | Executed result |
 |---|---|
-| Backend suite with disposable PostgreSQL | 85 passed, 0 failed, 0 skipped |
-| Clean checkout without private bundles | 73 passed; 12 explicit bundle-dependent skips; PostgreSQL tests included |
-| Frontend authentication and result interpretation | 15 passed, 0 failed; includes missing-score handling, saved-decision counting, filters/order and formula-safe complete export |
+| Backend suite with disposable PostgreSQL | 31 October critical-fix verification: 93 passed, 0 failed, 0 skipped |
+| Clean checkout without private bundles | 31 October verification: 81 passed; 12 explicit bundle-dependent skips; PostgreSQL tests included |
+| Frontend authentication, CSV import and result interpretation | 31 October verification: 29 passed, 0 failed; includes empty-relation gates, import mapping, missing-score handling, saved decisions and formula-safe export |
 | Matched benchmark scientific contracts | 6 passed; thresholds, sparse gradients, shared labels, metric reproduction and publication identity checked |
 | Responsive comparison interface | Desktop and phone views, seed selection and metric switching verified |
 | Production frontend build | Compiled successfully with type and lint checks |
@@ -227,7 +233,7 @@ The AWS deployment uses an active Free account plan and refuses scripted mutatio
 
 The repositories preserve progressive history exceeding ten meaningful commits and provide main and dev branches. The public team repository remains updated. A private submission mirror exists under Avaneesh Chavan's account; the approved existing teammates have been invited with push permission and must accept those invitations. Secrets, dumps, local submission identities, large private bundles and rendered intermediates are excluded from commits.
 
-The corrected GitHub Actions workflow tests the actual FastAPI service rather than the archived Express prototype. The verified successful run is https://github.com/Eldo-John-Giby/NeuroGraph-DB/actions/runs/41171173940. Its backend, frontend and container jobs all completed successfully. It runs the API/model-contract suite and real PostgreSQL migrations, Next.js lint/build and authentication tests, and a deployable Docker build. Standard Linux runners execute on the public source repository; hosted jobs skip the private mirror to avoid consuming metered allowances. No workflow embeds cloud credentials or launches an unguarded paid deployment.
+The corrected GitHub Actions workflow tests the actual FastAPI service rather than the archived Express prototype. The verified successful run is https://github.com/Eldo-John-Giby/NeuroGraph-DB/actions/runs/41174270640 for source commit c9a8eb8. Its backend, frontend and container jobs all completed successfully. Later local submission-critical changes have separate local test evidence and are not covered by that hosted run until released and checked by CI. The workflow runs API/model-contract tests, real PostgreSQL migrations, Next.js lint/build, authentication tests and a deployable Docker build. Standard Linux runners execute on the public source repository; hosted jobs skip the private mirror to avoid consuming metered allowances. No workflow embeds cloud credentials or launches an unguarded paid deployment.
 
 The implemented CI pipeline automatically tests and builds code; production release remains an explicit CLI step, not automatic CD. It supports the +1 pipeline bonus as evidence for faculty evaluation. Automated regression tests, trigger-based audit logging, verified recovery and measured query-plan evidence support the additional industry-practice +1 category. These practices are not counted as several separate bonus marks.
 

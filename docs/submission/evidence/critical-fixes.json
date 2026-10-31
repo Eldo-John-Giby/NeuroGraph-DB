@@ -1,0 +1,73 @@
+{
+  "date": "2026-10-31",
+  "source_base_commit": "c9a8eb835d45f27945ead59a16b09dea9439bf3b",
+  "source_state": "locally verified submission-critical fixes; not pushed or deployed",
+  "implementation_sha256": {
+    "backend/app/api/batches.py": "f1fbef8cdecbca85a44b6f53a976aca2aa6e0331e11c1b4403c3d370181006ff",
+    "backend/app/api/routes.py": "5261ba76932e105a6f03a957ee1e2a4d6c664dc741d6ca3e5a3f5aa1b907c256",
+    "backend/app/services/inductive_yelpchi.py": "7d357c1366f5b97e14cb64e6732e8324d5ff93bf75cae9c8f0652a51b30a32da",
+    "backend/app/services/upload_namespace.py": "d659402d3a243d8e9a8400532dbed02e7f621183f2af4b00546fd6eb0e22e72b",
+    "backend/tests/test_analysis_history.py": "dc8a0812eabb505f023f00ff006dbb5e747571b78b790d10c6e0c27c38e8d059",
+    "backend/tests/test_inductive_csv_scoring.py": "d99dbdc4b91fa4bf8d7452c4696ae453328eb343aed7a1ae3f5de3d088da53ac",
+    "backend/tests/test_upload_recovery.py": "3bb06f82c7a4548b32caa9ca5f33a60af837025ee96081b17c2791fae5b9e861",
+    "db-dashboard/frontend/app/components/InductiveBatchSection.tsx": "53ffa105f63d8381d76ec973b3e2fef9aef2df1e847ee6cc085abe1d298cf316",
+    "db-dashboard/frontend/app/lib/result-helpers.ts": "bce4d02961a7dbe4a4bc9fd159b786e4697e448476bdefdce18815b92ae7da9f",
+    "db-dashboard/frontend/app/reviews/submit/page.tsx": "09276d63dae7d103e43557978909d380ecedce247a05c1c32601bd65acffc83d",
+    "db-dashboard/frontend/tests/result-helpers.test.cjs": "c5e5a4dadd4ca418a762d8b864b6ff15cf9d797971eb91ff24923d44cbe1a426"
+  },
+  "backend_artifact_backed": {
+    "tests": 93,
+    "errors": 0,
+    "failures": 0,
+    "skipped": 0,
+    "passed": 93
+  },
+  "backend_clean_checkout": {
+    "tests": 93,
+    "errors": 0,
+    "failures": 0,
+    "skipped": 12,
+    "passed": 81
+  },
+  "frontend": {
+    "tests_passed": 29,
+    "failed": 0,
+    "lint": "passed",
+    "production_build": "passed including types"
+  },
+  "scientific_contracts": {
+    "passed": 6,
+    "failed": 0,
+    "retraining": false
+  },
+  "real_encoder_upload_smoke": {
+    "scored": 3,
+    "encoder_mocked": false,
+    "network": "disabled",
+    "labels_imported": false,
+    "database": "isolated in-memory SQLite",
+    "expected_neighbor_counts": [
+      {
+        "rur": 0,
+        "rsr": 0,
+        "rtr": 0
+      },
+      {
+        "rur": 0,
+        "rsr": 0,
+        "rtr": 1
+      },
+      {
+        "rur": 0,
+        "rsr": 1,
+        "rtr": 2
+      }
+    ],
+    "retry_reused_receipt": true,
+    "bundle_manifest_sha256": "9d4f10a81937987ae7588d86e29191d355af296c6efc29ec3e5b331282d23edd"
+  },
+  "hosted_ci_for_base": "https://github.com/Eldo-John-Giby/NeuroGraph-DB/actions/runs/41174270640",
+  "hosted_ci_for_local_changes": "not run; no push or deployment performed",
+  "production_data_changed": false,
+  "prior_saved_results_rewritten": false
+}

@@ -15,6 +15,14 @@ export type ResultRow = {
   prediction: { risk_score: number; decision: "flagged" | "cleared" } | null;
 };
 
+/** Relation weights describe a three-way model gate, not individual neighbors. */
+export function relationGateLabel(weight: number | undefined, count: number | undefined): string {
+  if (count == null) return "Context count unavailable";
+  if (count <= 0) return "No eligible neighbors";
+  if (weight == null || !Number.isFinite(weight)) return "Weight unavailable";
+  return `${(weight * 100).toFixed(1)}%`;
+}
+
 export function resultSummary(rows: ResultRow[]) {
   const scored = rows.filter((row) => row.prediction !== null);
   const flagged = scored.filter(

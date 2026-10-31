@@ -19,6 +19,8 @@ The frontend submits a six-column CSV to FastAPI. The API validates rows, resolv
 
 Scoring verifies model artifacts, loads permitted training-partition history without selecting labels, limits history to the batch's arrival cutoff, and builds RUR/RSR/RTR links from earlier reviews. Earlier rows in that upload may supply context for later rows. The selected snapshot remains unchanged. Scores, thresholds, attention, neighbors and evidence fingerprints are saved in PostgreSQL.
 
+The API prefixes uploaded source namespaces with the authenticated user ID, keeping imported reviews/authors/products separate across users even for identical filenames and external IDs. Old saved receipts are still readable and retries can recover the original requester's receipt. Ordinary uploaded identities do not join to Yelp reference identities: their effective relational context and activity counts are within-file. The snapshot remains an eligibility/compatibility requirement, not a source of unrelated business history. Both snapshot scope and relation schema must match the model policy; either mismatch blocks scoring.
+
 For a completed result, `batch_analysis_graph.py` reconstructs the inference connections, checks their saved fingerprint, and writes the relevant `UploadAnalysisReview` nodes and `CONTEXT_FOR` links to Neo4j. The graph projection supports inspection; PyTorch/PyG calculate the neural scores. Synthetic examples have a separate projection.
 
 ## Ownership and access

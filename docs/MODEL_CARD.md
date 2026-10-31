@@ -16,9 +16,15 @@ RoBERTa revision `e2da8e2f811d1448a5b465c236feacd80ffbac7b` is frozen, with mask
 
 RUR connects the same reviewer; RSR the same product and rating; RTR the same product within 30 days. Directed earlier-to-later relations use at most 50 recent neighbors each. Hidden width 128, dropout 0.2, AdamW learning rate 0.001, weight decay 0.0001, train-class-weighted cross entropy, maximum 80 epochs, patience 12. The deployed run completed 80 epochs and selected epoch 74.
 
+Every text-enabled run in the matched comparison reached the 80-epoch cap (one full-batch gradient update per epoch). Only graph-only stopped early. Results compare a fixed training budget, not confirmed convergence, and can reflect convergence-speed differences.
+
 ## Decisions and evidence
 
 Scores at or above 0.7870707071 are flagged. This validation-selected cutoff is not universally optimal. Scores are not separately probability-calibrated; 0.9 does not establish 90% fraud probability. A cleared result is below the cutoff, not proven genuine. Saved relation attention and neighbors support inspection but are not causal proof of fraud.
+
+At that cutoff the recorded test confusion matrix is TP 553, FP 834, TN 7,351, FN 698: flag precision is about 39.9% and spam recall about 44.2%. ROC-AUC 0.8105 does not imply that most flagged rows are necessarily spam. When spam is rarer, precision can fall further even if true/false-positive rates stayed constant; those rates are not proven to transfer to new domains. The UI therefore prioritizes human review and does not estimate file accuracy without independent labels.
+
+Relation weights are a three-way gate across relation branches, not attention over individual neighbors. The interface suppresses weights for zero-neighbor relations without renormalizing or changing the actual inference result.
 
 Manifest checks and fixed-review reproduction reject missing or mismatched artifacts. Human feedback is stored separately and does not automatically retrain the model or erase an old prediction.
 

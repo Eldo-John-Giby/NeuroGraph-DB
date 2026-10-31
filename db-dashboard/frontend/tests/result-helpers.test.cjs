@@ -13,7 +13,13 @@ vm.runInNewContext(
   }).outputText,
   { exports: exportsForTest },
 );
-const { resultSummary, selectResultRows, resultsCsv } = exportsForTest;
+const { resultSummary, selectResultRows, resultsCsv, relationGateLabel } = exportsForTest;
+test("relation gate hides empty or unknown context without inventing or renormalizing weights", () => {
+  assert.equal(relationGateLabel(0.8, 0), "No eligible neighbors");
+  assert.equal(relationGateLabel(0.8, undefined), "Context count unavailable");
+  assert.equal(relationGateLabel(undefined, 2), "Weight unavailable");
+  assert.equal(relationGateLabel(0.2, 3), "20.0%");
+});
 function row(n, score, decision = "cleared", text = "A review") {
   return {
     row_number: n,

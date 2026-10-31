@@ -1,7 +1,7 @@
 {
-  "date": "2026-10-29",
+  "date": "2026-10-31",
   "backend": {
-    "passed": 85,
+    "passed": 93,
     "failed": 0,
     "skipped": 0,
     "includes_real_postgresql": true,
@@ -18,9 +18,17 @@
   "foreign_key_columns": 37,
   "primary_key_coverage": "all application tables",
   "clean_checkout": {
-    "passed": 73,
+    "passed": 81,
     "skipped_private_bundle_tests": 12,
     "failed": 0,
     "includes_real_postgresql": true
-  }
+  },
+  "source_base_commit": "c9a8eb835d45f27945ead59a16b09dea9439bf3b",
+  "source_state": "locally verified submission-critical fixes; not pushed or deployed",
+  "frontend_all": {
+    "passed": 29,
+    "failed": 0,
+    "command": "node --test tests/*.test.cjs"
+  },
+  "detail_record": "critical-fixes.json"
 }

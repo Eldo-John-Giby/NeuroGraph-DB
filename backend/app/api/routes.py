@@ -18,6 +18,7 @@ from app.security import (as_utc, current_user, digest, hash_password, issue_ses
                           require_roles, verify_password)
 from app.services.yelpchi_baseline import get_verified_baseline
 from app.services.yelpchi_multimodal import get_verified_multimodal
+from app.services.upload_namespace import upload_source
 
 router = APIRouter(prefix="/api/v1")
 
@@ -176,7 +177,9 @@ def list_reviews(limit: int = 25, offset: int = 0, source_system: str | None = N
         raise HTTPException(status_code=422, detail={"code": "invalid_date_range", "message": "reviewed_after must be before reviewed_before."})
     filters = [visible_review(db, user)]
     if source_system is not None:
-        filters.append(Review.source_system == source_system)
+        # Accept the caller's original label as a filter as well as the stored
+        # namespace. Public reference data still uses its original source key.
+        filters.append(Review.source_system.in_([source_system, upload_source(user.user_id, source_system)]))
     if reviewer_id is not None:
         filters.append(Review.reviewer_id == reviewer_id)
     if product_id is not None:
@@ -232,7 +235,10 @@ def list_products(limit: int = 25, offset: int = 0,
 def create_review(payload: ReviewCreate, user: User = Depends(current_user), db: Session = Depends(get_db)):
     if (payload.source_system is None) != (payload.source_review_key is None):
         raise HTTPException(status_code=422, detail={"code": "source_pair_required", "message": "source_system and source_review_key must be supplied together."})
-    review = Review(**payload.model_dump(), submitted_by_user_id=user.user_id)
+    values = payload.model_dump()
+    if payload.source_system is not None:
+        values["source_system"] = upload_source(user.user_id, payload.source_system)
+    review = Review(**values, submitted_by_user_id=user.user_id)
     db.add(review)
     try:
         db.flush()

@@ -1,25 +1,25 @@
 {
   "date": "2026-10-31",
-  "source_commit": "6b5c742f8887f89239b3d1ec8241e4b1456315b0",
-  "run_id": 41171173940,
-  "url": "https://github.com/Eldo-John-Giby/NeuroGraph-DB/actions/runs/41171173940",
+  "source_commit": "c9a8eb835d45f27945ead59a16b09dea9439bf3b",
+  "run_id": 41174270640,
+  "url": "https://github.com/Eldo-John-Giby/NeuroGraph-DB/actions/runs/41174270640",
   "conclusion": "success",
   "jobs": [
     {
-      "name": "Next.js lint build and authentication tests",
-      "conclusion": "success",
-      "url": "https://github.com/Eldo-John-Giby/NeuroGraph-DB/actions/runs/41171173940/job/124449249958"
-    },
-    {
       "name": "Build deployable Docker image",
       "conclusion": "success",
-      "url": "https://github.com/Eldo-John-Giby/NeuroGraph-DB/actions/runs/41171173940/job/124449249970"
+      "url": "https://github.com/Eldo-John-Giby/NeuroGraph-DB/actions/runs/41174270640/job/124458457581"
     },
     {
       "name": "FastAPI tests and PostgreSQL database features",
       "conclusion": "success",
-      "url": "https://github.com/Eldo-John-Giby/NeuroGraph-DB/actions/runs/41171173940/job/124449250099"
+      "url": "https://github.com/Eldo-John-Giby/NeuroGraph-DB/actions/runs/41174270640/job/124458457850"
+    },
+    {
+      "name": "Next.js lint build and authentication tests",
+      "conclusion": "success",
+      "url": "https://github.com/Eldo-John-Giby/NeuroGraph-DB/actions/runs/41174270640/job/124458457913"
     }
   ],
-  "release_boundary": "CI tests and builds automatically; production deployment is a separate explicit CLI step. Documentation-only commits may follow this tested application revision."
+  "release_boundary": "This CI run covers only the exact source_commit above. Later submission-critical fixes have separate local verification evidence; no hosted CI or production deployment of those changes is claimed."
 }

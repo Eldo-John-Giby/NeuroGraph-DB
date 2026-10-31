@@ -334,7 +334,7 @@ class InductiveYelpChiRuntime:
 
         # Scope compatibility verification
         expected_policy = self._prep_config.get("relation_policy", "inductive-rur-rsr-rtr-v1")
-        if snapshot.context_scope_key != expected_policy and snapshot.relation_schema_version != expected_policy:
+        if snapshot.context_scope_key != expected_policy or snapshot.relation_schema_version != expected_policy:
             raise ScopeIncompatibilityError(
                 f"Snapshot scope '{snapshot.context_scope_key}' does not match model policy '{expected_policy}'."
             )

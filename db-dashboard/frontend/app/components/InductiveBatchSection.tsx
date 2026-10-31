@@ -20,6 +20,7 @@ import {
   resultSummary,
   selectResultRows,
   resultsCsv,
+  relationGateLabel,
 } from "../lib/result-helpers";
 import { BatchRelationshipGraph } from "./BatchRelationshipGraph";
 
@@ -437,7 +438,9 @@ export function InductiveBatchSection({
             <div className="result-summary-footer">
               <p>
                 Flags need human review. Scores are model signals, not proof of
-                fraud.
+                fraud. If fake reviews are rare in your file, a larger share of
+                flags may be false positives. Accuracy on your file is unknown
+                without independent labels.
               </p>
               <span>
                 Cutoff{" "}
@@ -533,8 +536,12 @@ export function InductiveBatchSection({
                     ? ` · ${snapshot.node_count.toLocaleString()} stored review nodes`
                     : ""}
                   . This is the available reference graph, not the number of
-                  neighbors used for every row. Only eligible earlier
-                  connections enter a row’s context.
+                  neighbors used for every row. Uploaded author and product
+                  identities are separate from the Yelp reference data, so
+                  ordinary uploads use connections and prior counts within that
+                  file, not Yelp author or product history. The snapshot checks
+                  model compatibility; its stored node count does not imply
+                  historical neighbors were used.
                 </p>
               </article>
               <article>
@@ -879,23 +886,16 @@ export function InductiveBatchSection({
                     </p>
                     {selectedRow.prediction.attention_weights && (
                       <p>
-                        Model relation attention: same author{" "}
-                        {(
-                          (selectedRow.prediction.attention_weights.rur ?? 0) *
-                          100
-                        ).toFixed(1)}
-                        %; same product/rating{" "}
-                        {(
-                          (selectedRow.prediction.attention_weights.rsr ?? 0) *
-                          100
-                        ).toFixed(1)}
-                        %; timing{" "}
-                        {(
-                          (selectedRow.prediction.attention_weights.rtr ?? 0) *
-                          100
-                        ).toFixed(1)}
-                        %. These are learned relative weights, not probabilities
-                        of fraud or a causal explanation.
+                        Model relation gate: same author —{" "}
+                        {relationGateLabel(selectedRow.prediction.attention_weights.rur, selectedRow.prediction.evidence.neighbor_counts.rur)}
+                        ; same product/rating —{" "}
+                        {relationGateLabel(selectedRow.prediction.attention_weights.rsr, selectedRow.prediction.evidence.neighbor_counts.rsr)}
+                        ; timing —{" "}
+                        {relationGateLabel(selectedRow.prediction.attention_weights.rtr, selectedRow.prediction.evidence.neighbor_counts.rtr)}
+                        . Percentages describe the model’s three-way relation
+                        gate, not individual neighbors. Empty relations are
+                        hidden without renormalizing the remaining weights.
+                        These are not fraud probabilities or causal explanations.
                       </p>
                     )}
                     <details>

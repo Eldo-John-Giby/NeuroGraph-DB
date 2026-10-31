@@ -31,6 +31,7 @@ from app.models import (
 from app.schemas import BatchContextPermissionRequest
 from app.security import current_user, require_roles
 from app.services.batch_csv import MAX_CSV_BYTES, parse_review_csv
+from app.services.upload_namespace import upload_source
 
 router = APIRouter(prefix="/api/v1")
 
@@ -224,9 +225,10 @@ async def create_batch_analysis(
     content = await file.read(MAX_CSV_BYTES + 1)
     await file.close()
     rows = parse_review_csv(content)
-    normalized_source = source_system.strip()
-    if not normalized_source:
+    source_label = source_system.strip()
+    if not source_label:
         raise HTTPException(status_code=422, detail={"code": "invalid_source_system", "message": "source_system must not be empty."})
+    normalized_source = upload_source(user.user_id, source_label)
 
     # Replaying the same upload opens the original saved batch. A second click
     # must not turn previously accepted reviews into a new all-rejected import.
@@ -234,7 +236,9 @@ async def create_batch_analysis(
     existing_batch = db.scalar(
         select(BatchAnalysis).where(
             BatchAnalysis.requested_by_user_id == user.user_id,
-            BatchAnalysis.source_system == normalized_source,
+            # Preserve access to the requester's legacy receipt without reusing
+            # any other requester's canonical identities or imported records.
+            BatchAnalysis.source_system.in_([normalized_source, source_label]),
             BatchAnalysis.upload_sha256 == upload_sha256,
             BatchAnalysis.accepted_count > 0,
         ).order_by(BatchAnalysis.batch_analysis_id).limit(1)
@@ -286,7 +290,7 @@ async def create_batch_analysis(
     if candidate_model is not None and snapshot is not None:
         is_compatible = (
             snapshot.context_scope_key == "inductive-rur-rsr-rtr-v1"
-            or snapshot.relation_schema_version == "inductive-rur-rsr-rtr-v1"
+            and snapshot.relation_schema_version == "inductive-rur-rsr-rtr-v1"
         )
         if not is_compatible:
             raise HTTPException(
@@ -325,10 +329,8 @@ async def create_batch_analysis(
                 reviewed_at = review.reviewed_at
                 if reviewed_at is not None and reviewed_at.tzinfo is None:
                     reviewed_at = reviewed_at.replace(tzinfo=timezone.utc)
-                # Source review IDs are global to a source, while receipts and
-                # inference runs belong to their uploader. Reuse an unchanged
-                # review in the new user's batch without exposing another user's
-                # receipt or silently overwriting any review fields.
+                # Reuse unchanged records only within this authenticated
+                # uploader's server-owned source namespace.
                 if (reviewer_key == row.reviewer_key and product_key == row.product_key
                         and review.rating == row.rating and reviewed_at == row.reviewed_at
                         and review.review_text == row.review_text):
@@ -643,7 +645,7 @@ def score_batch_analysis(
         raise HTTPException(status_code=404, detail={"code": "snapshot_not_found", "message": "Graph snapshot was not found."})
     if snapshot.storage_status != "available" or not snapshot.batch_context_permitted:
         raise HTTPException(status_code=409, detail={"code": "snapshot_not_permitted", "message": "Graph snapshot is not available or not permitted for batch context."})
-    if snapshot.context_scope_key != "inductive-rur-rsr-rtr-v1" and snapshot.relation_schema_version != "inductive-rur-rsr-rtr-v1":
+    if snapshot.context_scope_key != "inductive-rur-rsr-rtr-v1" or snapshot.relation_schema_version != "inductive-rur-rsr-rtr-v1":
         raise HTTPException(status_code=409, detail={"code": "snapshot_scope_incompatible", "message": f"Graph snapshot scope '{snapshot.context_scope_key or snapshot.relation_schema_version}' is incompatible with model relation schema 'inductive-rur-rsr-rtr-v1'."})
 
     if batch.inference_run_id is None:
