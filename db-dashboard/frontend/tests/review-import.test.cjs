@@ -184,3 +184,17 @@ test("upload row and byte limits remain enforced before transformation", () => {
     /8 MiB/,
   );
 });
+
+test("native column names also adapt export-style ratings and explicit date orders", async () => {
+  const data = read(native.replace(",5,2026-10-20,", ",FIVE,03/04/2026,"));
+  assert.ok(
+    issues(data, data.mapping, options).some((x) => x.includes("day/month")),
+  );
+  const row = parsedRows(
+    await normalize(data, data.mapping, { ...options, dateOrder: "dmy" }),
+  )[0];
+  assert.equal(row.rating, "5");
+  assert.equal(row.review_date, "2026-04-03");
+  assert.equal(row.review_id, "r1");
+  assert.equal(row.reviewer_id, "u1");
+});

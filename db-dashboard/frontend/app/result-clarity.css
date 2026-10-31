@@ -755,3 +755,18 @@
     flex-wrap: wrap;
   }
 }
+.compact-admin .evidence-table,
+.analysis-results .evidence-table {
+  font-size: 12px;
+}
+.compact-admin .evidence-table th,
+.analysis-results .evidence-table th {
+  font-size: 10px;
+  padding: 11px 12px;
+}
+.compact-admin .evidence-table td,
+.analysis-results .evidence-table td {
+  padding: 12px;
+}
+.upload-panel .button-primary:disabled { background:#dce3de; border-color:#dce3de; color:#7b8a80; cursor:not-allowed; }
+.compact-admin .button-secondary:disabled,.analysis-results .button-secondary:disabled { cursor:not-allowed; opacity:.45; }

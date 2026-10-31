@@ -137,12 +137,28 @@ export function missingAuthorCount(data: ReviewExport, map: ColumnMap): number {
     .length;
 }
 
+export function requiresValueConversion(
+  data: ReviewExport,
+  map: ColumnMap,
+): boolean {
+  return data.rows.some(
+    (row) =>
+      /^(?:ONE|TWO|THREE|FOUR|FIVE|[1-5]\.0+|[1-5]\s*(?:STARS?|\/\s*5))$/i.test(
+        importCell(data, row, "rating", map),
+      ) ||
+      /^(?:\d{4}\/\d{1,2}\/\d{1,2}|\d{1,2}[\/-]\d{1,2}[\/-]\d{4})$/.test(
+        importCell(data, row, "review_date", map),
+      ),
+  );
+}
+
 const untouchedNative = (
   data: ReviewExport,
   map: ColumnMap,
   options: ImportOptions,
 ) =>
   data.canonical &&
+  !requiresValueConversion(data, map) &&
   IMPORT_FIELDS.every((field) => map[field] === field) &&
   !options.businessId &&
   !options.separateAuthors &&

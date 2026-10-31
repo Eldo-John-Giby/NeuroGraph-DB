@@ -24,6 +24,7 @@ import {
   normalizeReviewExport,
   importIssues,
   missingAuthorCount,
+  requiresValueConversion,
   importCell,
   IMPORT_FIELDS,
   type ReviewExport,
@@ -162,7 +163,26 @@ export default function BatchAnalysisPage() {
     () => (parsed && mapping ? importIssues(parsed, mapping, options) : []),
     [parsed, mapping, options],
   );
-  const needsSetup = Boolean(parsed && !parsed.canonical);
+  const needsSetup = Boolean(
+    parsed &&
+      mapping &&
+      (!parsed.canonical || requiresValueConversion(parsed, mapping)),
+  );
+  const mappingNeedsAttention = Boolean(
+    mapping &&
+      (["rating", "review_date", "review_text"] as const).some(
+        (field) => !mapping[field],
+      ),
+  );
+  const needsDateOrder = Boolean(
+    parsed &&
+      mapping &&
+      parsed.rows.some((row) =>
+        /^\d{1,2}[\/-]\d{1,2}[\/-]\d{4}$/.test(
+          importCell(parsed, row, "review_date", mapping),
+        ),
+      ),
+  );
   const unknownAuthors =
     parsed && mapping ? missingAuthorCount(parsed, mapping) : 0;
   const drop = (event: DragEvent<HTMLDivElement>) => {
@@ -191,7 +211,7 @@ export default function BatchAnalysisPage() {
           ? file
           : new File([csv], file.name, { type: "text/csv" });
       const limitedAuthors =
-        !parsed.canonical &&
+        needsSetup &&
         (unknownAuthors > 0 || /(?:name|display)/i.test(mapping.reviewer_id));
       const source = `csv-${file.name.replace(/[^a-zA-Z0-9_-]/g, "-").slice(0, limitedAuthors ? 60 : 80)}${limitedAuthors ? "-limited-authors" : ""}`;
       const form = new FormData();
@@ -308,7 +328,10 @@ export default function BatchAnalysisPage() {
               </div>
               {needsSetup && (
                 <>
-                  <details open={issues.length > 0} className="import-mapping">
+                  <details
+                    open={mappingNeedsAttention}
+                    className="import-mapping"
+                  >
                     <summary>Column mapping</summary>
                     <div className="import-mapping-grid">
                       {IMPORT_FIELDS.map((field) => (
@@ -387,24 +410,28 @@ export default function BatchAnalysisPage() {
                       </span>
                     </label>
                   )}
-                  <label className="import-date-order">
-                    Date format
-                    <select
-                      value={options.dateOrder}
-                      disabled={phase !== "idle"}
-                      onChange={(e) =>
-                        setOptions({
-                          ...options,
-                          dateOrder: e.target
-                            .value as ImportOptions["dateOrder"],
-                        })
-                      }
-                    >
-                      <option value="iso">ISO / year first</option>
-                      <option value="dmy">DD/MM/YYYY</option>
-                      <option value="mdy">MM/DD/YYYY</option>
-                    </select>
-                  </label>
+                  {needsDateOrder && (
+                    <>
+                      <label className="import-date-order">
+                        Date format
+                        <select
+                          value={options.dateOrder}
+                          disabled={phase !== "idle"}
+                          onChange={(e) =>
+                            setOptions({
+                              ...options,
+                              dateOrder: e.target
+                                .value as ImportOptions["dateOrder"],
+                            })
+                          }
+                        >
+                          <option value="iso">ISO / year first</option>
+                          <option value="dmy">DD/MM/YYYY</option>
+                          <option value="mdy">MM/DD/YYYY</option>
+                        </select>
+                      </label>
+                    </>
+                  )}
                   {!mapping.review_id && (
                     <p className="import-hint">
                       Stable local review IDs will be generated from the
