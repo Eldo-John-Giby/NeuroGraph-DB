@@ -68,7 +68,7 @@ jobs:
           cache: npm
           cache-dependency-path: db-dashboard/frontend/package-lock.json
       - run: npm ci
-      - run: node --test tests/auth-refresh.test.cjs
+      - run: node --test tests/*.test.cjs
       - run: npm run lint
       - run: npm run build
         env:

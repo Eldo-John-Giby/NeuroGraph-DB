@@ -24,6 +24,7 @@ export function BatchRelationshipGraph({ batchId }: { batchId: number }) {
     return [node.key, {x: 330 + Math.cos(angle) * 230, y: 270 + Math.sin(angle) * 220}];
   }));
   const links = graph?.relationships.filter(edge => (relation === 'ALL' || edge.relation === relation)
+    && positions.has(edge.source) && positions.has(edge.target)
     && (!selected || edge.source === selected || edge.target === selected)) || [];
   const chosen = graph?.nodes.find(node => node.key === selected);
   return <section className="panel">

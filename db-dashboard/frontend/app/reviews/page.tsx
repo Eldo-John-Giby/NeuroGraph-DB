@@ -1,7 +1,8 @@
 'use client';
 
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, Suspense } from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { Star, Plus, Filter, ClipboardList, X, Zap } from 'lucide-react';
 import AppShell from '../components/AppShell';
 import {
@@ -45,7 +46,8 @@ interface PredictionItem {
   created_at?: string;
 }
 
-export default function ReviewHistoryPage() {
+function ReviewHistoryContent() {
+  const searchParams = useSearchParams();
   const { user, isLoading: authLoading, isAuthenticated } = useRequireAuth();
 
   // Review List State
@@ -117,6 +119,15 @@ export default function ReviewHistoryPage() {
       setLoading(false);
     }
   }, [isAuthenticated, limit, offset, appliedFilters]);
+
+  // Catalog and analysis links must actually apply the author filter.
+  useEffect(() => {
+    const id = searchParams.get('reviewer_id') || '';
+    const safeId = /^[1-9]\d*$/.test(id) ? id : '';
+    setReviewerIdInput(safeId);
+    setAppliedFilters(filters => ({...filters, reviewer_id: safeId}));
+    setOffset(0);
+  }, [searchParams]);
 
   // Load reviews on filter or offset change
   useEffect(() => {
@@ -695,4 +706,8 @@ export default function ReviewHistoryPage() {
       </div>
     </AppShell>
   );
+}
+
+export default function ReviewHistoryPage() {
+  return <Suspense fallback={<div className="session-loading">Loading review records…</div>}><ReviewHistoryContent/></Suspense>;
 }

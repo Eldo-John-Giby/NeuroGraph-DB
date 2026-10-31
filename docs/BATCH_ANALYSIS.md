@@ -27,3 +27,9 @@ The current processing endpoint executes the worker function synchronously with 
 The [matched benchmark](benchmarks/README.md) compares four architectures on the same 9,436 chronological test reviews. Temporal replay and live batches can supply different historical context; an unlabelled upload has predictions but no measured accuracy. The app's downloadable fresh-upload CSV demonstrates the workflow. Historical labelled test files may have already-ingested IDs and should not be presented as fresh upload examples.
 
 Synthetic restaurant investigations are stored and projected separately with explicit provenance. Their known campaign membership and rating summaries demonstrate investigation; they do not provide measured ML performance or discovered ground truth.
+
+## Reading a result
+
+The saved result leads with counts of scored/flagged/not-flagged rows, then accepted-but-unscored and rejected import outcomes. It uses persisted decisions and the exact saved run cutoff; it does not reclassify rows from a rounded display value. No hardcoded manifest, snapshot identity or cutoff is substituted when records are missing. Technical provenance is expandable.
+
+Users can search full review text or internal/source IDs, filter by decision/import state, sort by score or original CSV row, and page through results. The full CSV export includes every saved row outcome regardless of display filters, retains the saved score/cutoff, and neutralizes spreadsheet formulas in text fields. An accessible native dialog shows full text, internal IDs, actual saved neighbors and attention weights. A feedback link prefills the internal review ID and supplies a return path to the analysis; author links apply the review-record filter. Neither attention nor a shared relationship is presented as proof of manipulation.

@@ -12,7 +12,7 @@ Access is by an administrator-provisioned account. Demo credentials are shared p
 
 1. Sign in and open **Model results** for the final model's chronological evaluation.
 2. Open **Upload & analyze**, download the sample CSV, and upload it. The application selects the compatible historical context.
-3. Open **Products & history** to revisit the saved scores and graph without rerunning the model. Identical file retries recover your prior receipt.
+3. Open **Products & history** to revisit saved results without rerunning the model. The result summary separates flagged, not flagged, unscored and rejected rows. Search/filter the rows, open full review text and context, record feedback, or download all results as CSV. Identical file retries recover your prior receipt.
 4. Use **Review feedback** to create, edit or remove a submitted investigation note. An administrator can triage or resolve it. Feedback never overwrites predictions.
 5. Open **Model comparison** for the shared-test results and all historical experiments. Use **Example investigation** for clearly marked synthetic case studies.
 
@@ -134,7 +134,7 @@ PYTHONPATH=..:. pytest
 # DISPOSABLE database. The tests refuse a database already containing users.
 TEST_POSTGRES_URL='postgresql+psycopg://USER:PASSWORD@localhost/EMPTY_TEST_DB' PYTHONPATH=..:. pytest tests/test_postgres_features.py
 cd ../db-dashboard/frontend
-node --test tests/auth-refresh.test.cjs
+node --test tests/*.test.cjs
 npm run lint
 npm run build
 ```
@@ -151,7 +151,7 @@ This runs `pg_dump -Fc` and `pg_restore` into a new disposable database, checks 
 
 The live frontend uses Vercel Hobby. The backend, PostgreSQL and Neo4j share one AWS server. PostgreSQL is cloud-hosted here; it is **not a managed database service**. Cloud deployment instructions and scripts are in [deploy/aws](deploy/aws/README.md). Before AWS mutations, `scripts/aws_free_plan.py` checks the intended account, FREE/ACTIVE status, expiry and remaining credit. The Free account plan is time- and credit-limited; this is not indefinite free hosting. No paid-plan upgrade is automated.
 
-[GitHub Actions](https://github.com/Eldo-John-Giby/NeuroGraph-DB/actions) tests the real FastAPI backend, migrations on PostgreSQL, frontend authentication/lint/build and the deployable Docker image. It uses standard Linux runners on the public repository. Hosted jobs skip the private submission mirror to avoid metered allowance use. No workflow contains cloud credentials or performs an unguarded paid deployment.
+[GitHub Actions](https://github.com/Eldo-John-Giby/NeuroGraph-DB/actions) automatically tests the real FastAPI backend, migrations on PostgreSQL, frontend authentication/lint/build and the deployable Docker image. It uses standard Linux runners on the public repository. Hosted jobs skip the private submission mirror to avoid metered allowance use. No workflow contains cloud credentials or performs an unguarded paid deployment.
 
 The default Vercel address and the backend's `sslip.io` hostname are provider hostnames. We do **not** claim the rubric's custom-domain bonus without an independently configured domain. No Docker Hub login is currently configured; the image builds and runs locally and on the server, but Docker Hub publication is not claimed.
 
@@ -172,3 +172,11 @@ docs/runs/                Verified training/evaluation run records
 Team: Avaneesh Chavan (data and application integration), Eldo John Giby (ML), Anubhav Bhattacharya (visualization and documentation). Course submission identifiers and instructor access details are distributed privately. The private submission mirror preserves project history, `main` and `dev`; the public team source remains available for demonstration and review.
 
 This is an academic research system. It does not establish review fraud as fact, does not include guaranteed uptime or autonomous retraining, and does not claim every model improvement proposed in historical planning documents has been implemented. The current submission evidence takes precedence over archived phase plans.
+
+The implemented workflow is CI (automatic tests and builds); production release is a separate explicit CLI step, not automatic CD. See [the pipeline and bonus explanation](docs/CI_AND_RELEASE.md).
+
+## Administration and independent review
+
+The **Model registry** records model/checkpoint identity, preparation versions and scoring jobs, and checks the current new-review runtime. It is read-only provenance, not another model leaderboard or a model-switching control. The **Reviewer catalog** maps source author keys to internal author IDs and opens their visible reviews. It does not assign account-level fraud scores; source authors are distinct from application login users. Both screens are administrator UI tools.
+
+An [independent review brief](docs/review/INDEPENDENT_REVIEW.md) lists the evidence, files, live walkthrough and scientific/security questions for a separate review. It does not claim an external review has already taken place.

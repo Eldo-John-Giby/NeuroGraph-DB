@@ -11,6 +11,8 @@ Start with the root README for the live application and installation. The mainta
 - [Complete ER diagram](submission/ERD.md), [data dictionary](submission/DATA_DICTIONARY.md) and [normalization](submission/NORMALIZATION.md).
 - [Reproduction](REPRODUCIBILITY.md), [deployment](../deploy/aws/README.md) and [release checks](RELEASE_CHECKLIST.md).
 - [Course report](submission/REPORT.md), [rubric mapping](submission/RUBRIC.md) and [demonstration](submission/DEMO.md).
+- [CI and release boundaries](CI_AND_RELEASE.md), including the pipeline bonus evidence.
+- [Independent review brief](review/INDEPENDENT_REVIEW.md).
 - [Plain-English viva guide](defense/BEGINNER_VIVA_GUIDE.md).
 
 The individual records under `runs/` preserve three historical experiments. Their scores are not ranked together because the data representations or evaluation protocols differ. The new matched comparison under `benchmarks/` evaluates four model arms on the same chronological split.

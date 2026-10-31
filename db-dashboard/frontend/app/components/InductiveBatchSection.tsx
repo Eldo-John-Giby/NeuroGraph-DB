@@ -1,22 +1,10 @@
 'use client';
 
-import React, { useEffect, useState, useCallback, useMemo } from 'react';
-import {
-  FileSpreadsheet,
-  Layers,
-  ShieldCheck,
-  AlertTriangle,
-  CheckCircle2,
-  Clock,
-  Copy,
-  Check,
-  RefreshCw,
-  Play,
-  Info,
-  XCircle,
-  Hash,
-} from 'lucide-react';
+import React, { useEffect, useState, useCallback, useMemo, useRef } from 'react';
+import Link from 'next/link';
+import { RefreshCw } from 'lucide-react';
 import { apiRequest, getErrorMessage } from '../lib/api';
+import { resultSummary, selectResultRows, resultsCsv } from '../lib/result-helpers';
 import { BatchRelationshipGraph } from './BatchRelationshipGraph';
 
 export interface BatchAnalysisSummary {
@@ -97,12 +85,6 @@ export interface BatchRowResult {
   } | null;
 }
 
-function truncateHash(hash: string, lead = 8, trail = 8): string {
-  if (!hash) return '—';
-  if (hash.length <= lead + trail) return hash;
-  return `${hash.slice(0, lead)}...${hash.slice(-trail)}`;
-}
-
 export function InductiveBatchSection({
   initialBatchId,
   showHeading = true,
@@ -119,21 +101,28 @@ export function InductiveBatchSection({
   const [loading, setLoading] = useState(true);
   const [scoring, setScoring] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [copiedKey, setCopiedKey] = useState<string | null>(null);
-  const [selectedEvidence, setSelectedEvidence] = useState<{
-    reviewKey: string;
-    evidence: PredictionEvidence;
-    score: number;
-    decision: string;
-  } | null>(null);
-
-  const copyToClipboard = (text: string, key: string) => {
-    if (typeof navigator !== 'undefined' && navigator.clipboard) {
-      navigator.clipboard.writeText(text);
-      setCopiedKey(key);
-      setTimeout(() => setCopiedKey(null), 2000);
-    }
-  };
+  const [selectedRow, setSelectedRow] = useState<BatchRowResult | null>(null);
+  const [query, setQuery] = useState(''), [decision, setDecision] = useState('all');
+  const [order, setOrder] = useState('score'), [page, setPage] = useState(0);
+  const [modelVersions, setModelVersions] = useState<Array<{version_key: string; supported_inference_mode: string}>>([]);
+  const [snapshot, setSnapshot] = useState<{graph_snapshot_id: number; snapshot_key: string; node_count: number} | null>(null);
+  const requestGeneration = useRef(0);
+  const dialog = useRef<HTMLDialogElement>(null);
+  useEffect(() => {
+    if (selectedRow && dialog.current) dialog.current.showModal();
+  }, [selectedRow]);
+  useEffect(() => { setPage(0); }, [query, decision, order, selectedBatchId]);
+  useEffect(() => {
+    void apiRequest<{items: Array<{version_key: string; supported_inference_mode: string}>}>('/api/v1/model-versions').then(d => setModelVersions(d.items)).catch(() => setModelVersions([]));
+  }, []);
+  useEffect(() => {
+    setSnapshot(null);
+    const id = currentBatch?.historic_graph_snapshot_id;
+    if (!id) return;
+    let active = true;
+    void apiRequest<{graph_snapshot_id: number; snapshot_key: string; node_count: number}>(`/api/v1/graph-snapshots/${id}`).then(d => { if (active) setSnapshot(d); }).catch(() => { if (active) setSnapshot(null); });
+    return () => { active = false; };
+  }, [currentBatch?.historic_graph_snapshot_id]);
 
   const fetchBatches = useCallback(async () => {
     if (initialBatchId) return;
@@ -152,6 +141,7 @@ export function InductiveBatchSection({
   }, [selectedBatchId, initialBatchId]);
 
   const fetchBatchDetails = useCallback(async (batchId: number) => {
+    const generation = ++requestGeneration.current;
     setLoading(true);
     setError(null);
     try {
@@ -164,14 +154,16 @@ export function InductiveBatchSection({
         const page = await apiRequest<{ items: BatchRowResult[] }>(`/api/v1/batch-analyses/${batchId}/results?limit=100&offset=${offset}`);
         allRows.push(...page.items);
       }
+      if (generation !== requestGeneration.current) return;
       setCurrentBatch(batchData);
       setResults(allRows);
     } catch (err) {
+      if (generation !== requestGeneration.current) return;
       setError(getErrorMessage(err));
       setCurrentBatch(null);
       setResults([]);
     } finally {
-      setLoading(false);
+      if (generation === requestGeneration.current) setLoading(false);
     }
   }, []);
 
@@ -194,7 +186,7 @@ export function InductiveBatchSection({
   }, [selectedBatchId, fetchBatchDetails, refreshKey]);
 
   useEffect(() => {
-    if (currentBatch?.status !== 'running' || selectedBatchId === null) return;
+    if (!['queued', 'running'].includes(currentBatch?.status || '') || selectedBatchId === null) return;
     const timer = setInterval(() => { void fetchBatchDetails(selectedBatchId); }, 5000);
     return () => clearInterval(timer);
   }, [currentBatch?.status, selectedBatchId, fetchBatchDetails]);
@@ -216,511 +208,32 @@ export function InductiveBatchSection({
     }
   };
 
-  // Distribution calculations
-  const stats = useMemo(() => {
-    const scored = results.filter((r) => r.prediction !== null);
-    if (!scored.length) return null;
-
-    let low = 0;
-    let moderate = 0;
-    let elevated = 0;
-    let high = 0;
-    let flagged = 0;
-
-    for (const item of scored) {
-      const s = item.prediction!.risk_score;
-      if (item.prediction!.decision === 'flagged') flagged++;
-      if (s < 0.25) low++;
-      else if (s < 0.5) moderate++;
-      else if (s < 0.787) elevated++;
-      else high++;
-    }
-
-    return {
-      totalScored: scored.length,
-      flaggedCount: flagged,
-      clearedCount: scored.length - flagged,
-      flagRate: (flagged / scored.length) * 100,
-      distribution: [
-        { label: 'Low (<0.25)', count: low, pct: (low / scored.length) * 100, color: 'bg-emerald-500' },
-        { label: 'Moderate (0.25-0.50)', count: moderate, pct: (moderate / scored.length) * 100, color: 'bg-teal-500' },
-        { label: 'Elevated (0.50-0.787)', count: elevated, pct: (elevated / scored.length) * 100, color: 'bg-amber-500' },
-        { label: 'High (≥0.787)', count: high, pct: (high / scored.length) * 100, color: 'bg-rose-500' },
-      ],
-    };
-  }, [results]);
-
-  return (
-    <div className="space-y-4 pt-6 border-t border-[#e2e5df]">
-      {showHeading && (
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div className="flex items-center gap-2">
-            <span className="text-[10px] font-bold uppercase tracking-wider text-[#6366f1]">
-              Saved CSV analysis
-            </span>
-          </div>
-          <div className="flex items-center gap-2">
-            {batches.length > 0 && (
-              <select
-                className="text-xs bg-[#fffefa] border border-[#d2d9d4] rounded px-2.5 py-1 text-[#22302a] focus:outline-none focus:ring-1 focus:ring-[#6366f1]"
-                value={selectedBatchId ?? ''}
-                onChange={(e) => setSelectedBatchId(Number(e.target.value))}
-              >
-                {batches.map((b) => (
-                  <option key={b.batch_analysis_id} value={b.batch_analysis_id}>
-                    Batch #{b.batch_analysis_id} ({b.status} · {b.accepted_count} rows)
-                  </option>
-                ))}
-              </select>
-            )}
-            <button
-              onClick={() => {
-                if (selectedBatchId !== null) void fetchBatchDetails(selectedBatchId);
-                void fetchBatches();
-              }}
-              className="button-secondary text-xs py-1 px-2.5 inline-flex items-center gap-1.5"
-              disabled={loading || scoring}
-            >
-              <RefreshCw className={`h-3 w-3 ${loading ? 'animate-spin' : ''}`} />
-              Refresh
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Provenance Banner */}
-      <div className="bg-[#f5f3ff] border border-[#ddd6fe] rounded-md px-3.5 py-2 flex items-center justify-between text-xs text-[#5b21b6]">
-        <div className="flex items-center gap-2">
-          <FileSpreadsheet className="h-4 w-4 text-[#7c3aed]" />
-          <span>
-            <strong>INDUCTIVE PRODUCT BATCH SCORING</strong> — Real-time temporal graph inference on uploaded CSVs
-          </span>
-        </div>
-        <span className="text-[10px] font-semibold uppercase tracking-wider text-[#6d28d9] bg-[#ede9fe] px-2 py-0.5 rounded">
-          inductive-rur-rsr-rtr-v1
-        </span>
-      </div>
-
-      {loading && (
-        <div className="notice-card text-xs text-[#74817b] animate-pulse">
-          Loading inductive batch data…
-        </div>
-      )}
-
-      {!loading && error && (
-        <div className="notice-card notice-error text-xs">
-          <strong>Batch assessment unavailable</strong>
-          <p>{error}</p>
-        </div>
-      )}
-
-      {!loading && !error && !currentBatch && (
-        <div className="rounded-lg border border-[#e2e5df] bg-[#fffefa] p-8 text-center text-xs text-[#74817b]">
-          <FileSpreadsheet className="h-8 w-8 text-[#9ba6a0] mx-auto mb-2" />
-          <p className="font-semibold text-[#22302a] text-sm mb-1">No Inductive Batch Uploads Found</p>
-          <p className="max-w-md mx-auto mb-4 text-[#74817b]">
-            Upload a product review CSV in the intake workspace with a permitted snapshot to trigger real-time inductive GNN scoring.
-          </p>
-        </div>
-      )}
-
-      {!loading && currentBatch && (
-        <>
-          {currentBatch.status === 'running' && <div className="notice-card" role="status"><strong>Your analysis is running</strong><p>This page checks for saved results automatically. You can leave and reopen this batch from Products &amp; history.</p></div>}
-          {currentBatch.rejected_count > 0 && <section className="notice-card notice-error"><strong>{currentBatch.rejected_count} rows could not be imported</strong><p>{currentBatch.accepted_count} accepted out of {currentBatch.row_count} submitted. Rejected rows have no model predictions.</p><details><summary>Inspect import errors</summary><ul>{results.filter(row=>row.row_state==='rejected').map(row=><li key={row.row_number}>Row {row.row_number}: {row.validation_errors.map(error=>error.message||error.code).join('; ')}</li>)}</ul></details></section>}
-          {/* Status Alert for Incomplete Batches */}
-          {currentBatch.status === 'queued' && (
-            <div className="rounded-lg border border-[#fed7aa] bg-[#fff7ed] p-4 text-xs text-[#9a3412] flex items-start justify-between gap-3">
-              <div className="flex items-start gap-2.5">
-                <Clock className="h-4 w-4 text-[#ea580c] mt-0.5 shrink-0" />
-                <div>
-                  <strong className="block text-sm text-[#7c2d12]">Batch #{currentBatch.batch_analysis_id} is Queued</strong>
-                  <p className="mt-0.5 text-[#9a3412]">
-                    Review records are persisted. Inference is queued in the durable worker queue. No placeholder scores or synthetic predictions are displayed.
-                  </p>
-                </div>
-              </div>
-              <button
-                onClick={handleScoreBatch}
-                disabled={scoring}
-                className="button-primary bg-[#ea580c] hover:bg-[#c2410c] text-white text-xs px-3 py-1.5 shrink-0 inline-flex items-center gap-1.5"
-              >
-                <Play className="h-3 w-3" />
-                {scoring ? 'Scoring…' : 'Process now'}
-              </button>
-            </div>
-          )}
-
-          {currentBatch.status === 'failed' && (
-            <div className="rounded-lg border border-[#fecdd3] bg-[#fff1f2] p-4 text-xs text-[#9f1239] flex items-start gap-2.5">
-              <XCircle className="h-4 w-4 text-[#e11d48] mt-0.5 shrink-0" />
-              <div>
-                <strong className="block text-sm text-[#881337]">Batch #{currentBatch.batch_analysis_id} Failed</strong>
-                <p className="mt-0.5 text-[#9f1239]">
-                  Inference failed: {currentBatch.job?.last_error || currentBatch.blocking_reasons.join(', ') || 'Worker execution error'}. No fabricated predictions were written.
-                </p>
-                {currentBatch.accepted_count > 0 && <button className="button-secondary mt-3" disabled={scoring} onClick={handleScoreBatch}>{scoring ? 'Retrying…' : 'Retry analysis'}</button>}
-              </div>
-            </div>
-          )}
-
-          {currentBatch.status === 'blocked' && (
-            <div className="rounded-lg border border-[#e2e5df] bg-[#f9faf7] p-4 text-xs text-[#74817b] flex items-start gap-2.5">
-              <AlertTriangle className="h-4 w-4 text-[#f59e0b] mt-0.5 shrink-0" />
-              <div>
-                <strong className="block text-sm text-[#22302a]">Scoring Blocked</strong>
-                <p className="mt-0.5 text-[#74817b]">
-                  Requirements not satisfied: {currentBatch.blocking_reasons.join(', ')}.
-                </p>
-              </div>
-            </div>
-          )}
-
-          {/* Metric Overview Grid */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            <article className="metric-card">
-              <p>Model version</p>
-              <div className="text-sm font-semibold truncate text-[#22302a]">
-                raw-yelpchi-inductive-roberta-gnn-v1
-              </div>
-              <small className="flex items-center gap-1 font-mono text-[10px] text-[#74817b]">
-                Manifest: {truncateHash(results[0]?.prediction?.evidence?.bundle_manifest_sha256 || '9d4f10a81937987ae7588d86e29191d355af296c6efc29ec3e5b331282d23edd', 6, 6)}
-                <button
-                  onClick={() =>
-                    copyToClipboard(
-                      results[0]?.prediction?.evidence?.bundle_manifest_sha256 ||
-                        '9d4f10a81937987ae7588d86e29191d355af296c6efc29ec3e5b331282d23edd',
-                      'manifest'
-                    )
-                  }
-                  className="hover:text-[#22302a]"
-                >
-                  {copiedKey === 'manifest' ? <Check className="h-2.5 w-2.5 text-emerald-600" /> : <Copy className="h-2.5 w-2.5" />}
-                </button>
-              </small>
-            </article>
-
-            <article className="metric-card">
-              <p>Graph context scope</p>
-              <div className="text-sm font-semibold text-[#22302a]">
-                Snapshot #{currentBatch.historic_graph_snapshot_id ?? '1'}
-              </div>
-              <small className="text-[10px] text-[#74817b]">
-                Scope: inductive-rur-rsr-rtr-v1 (47,176 nodes)
-              </small>
-            </article>
-
-            <article className="metric-card">
-              <p>Decision threshold</p>
-              <div className="text-sm font-semibold text-[#22302a]">
-                0.787071
-              </div>
-              <small className="text-[10px] text-[#74817b]">
-                Derived from validation set; test labels untouched
-              </small>
-            </article>
-
-            <article className="metric-card">
-              <p>Intake breakdown</p>
-              <div className="text-sm font-semibold text-[#22302a]">
-                {currentBatch.accepted_count} <span className="text-xs font-normal text-emerald-600">accepted</span>
-                {currentBatch.rejected_count > 0 && (
-                  <span className="text-xs font-normal text-rose-500 ml-1.5">/ {currentBatch.rejected_count} rejected</span>
-                )}
-              </div>
-              <small className="text-[10px] text-[#74817b]">
-                Total rows submitted: {currentBatch.row_count}
-              </small>
-            </article>
-          </div>
-
-          {/* Risk Assessment Summary Banner */}
-          {stats && currentBatch.status === 'completed' && (
-            <div className="rounded-lg border border-[#e2e5df] bg-[#fffefa] p-4">
-              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-3 pb-3 border-b border-[#edf0eb]">
-                <div>
-                  <h3 className="text-sm font-bold text-[#22302a] flex items-center gap-1.5">
-                    <ShieldCheck className="h-4 w-4 text-[#6366f1]" />
-                    Risk Assessment Overview
-                  </h3>
-                  <p className="text-xs text-[#74817b] mt-0.5">
-                    Temporal graph risk scoring with text-conditioned relation attention.
-                  </p>
-                </div>
-                <div className="flex items-center gap-4 text-xs">
-                  <div>
-                    <span className="text-[#74817b]">Flagged: </span>
-                    <strong className="text-rose-600 font-bold">{stats.flaggedCount}</strong>
-                    <span className="text-[#9ba6a0] ml-1">({stats.flagRate.toFixed(1)}%)</span>
-                  </div>
-                  <div>
-                    <span className="text-[#74817b]">Cleared: </span>
-                    <strong className="text-emerald-600 font-bold">{stats.clearedCount}</strong>
-                  </div>
-                </div>
-              </div>
-
-              {/* Score Distribution Bar */}
-              <div className="space-y-1.5">
-                <div className="flex justify-between text-[11px] text-[#74817b]">
-                  <span>Score distribution</span>
-                  <span>Threshold: 0.7871</span>
-                </div>
-                <div className="h-3 w-full bg-[#f4f6f3] rounded-full overflow-hidden flex">
-                  {stats.distribution.map((d, i) =>
-                    d.pct > 0 ? (
-                      <div
-                        key={i}
-                        className={`${d.color} transition-all`}
-                        style={{ width: `${d.pct}%` }}
-                        title={`${d.label}: ${d.count} reviews (${d.pct.toFixed(1)}%)`}
-                      />
-                    ) : null
-                  )}
-                </div>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1 text-[10px] text-[#74817b]">
-                  {stats.distribution.map((d, i) => (
-                    <div key={i} className="flex items-center gap-1.5">
-                      <span className={`w-2 h-2 rounded-full ${d.color}`} />
-                      <span>{d.label}: <strong>{d.count}</strong></span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {currentBatch.status === 'completed' && <BatchRelationshipGraph key={currentBatch.batch_analysis_id} batchId={currentBatch.batch_analysis_id} />}
-
-          {/* Scored Reviews Table */}
-          {results.length > 0 && (
-            <div className="panel p-0 overflow-hidden">
-              <div className="px-4 py-3 border-b border-[#e2e5df] flex items-center justify-between">
-                <div>
-                  <h3 className="text-sm font-semibold text-[#22302a]">Scored Reviews & Graph Evidence</h3>
-                  <p className="text-xs text-[#74817b]">
-                    Review risk assessments, actual fraud scores, dynamic relation attention, and neighborhood counts.
-                  </p>
-                </div>
-                <span className="text-xs text-[#74817b]">
-                  {results.length} rows
-                </span>
-              </div>
-
-              <div className="overflow-x-auto">
-                <table className="evidence-table w-full text-xs">
-                  <thead>
-                    <tr className="bg-[#f9faf7] text-[#74817b] border-b border-[#e2e5df]">
-                      <th className="py-2 px-3 text-left">Review ID</th>
-                      <th className="py-2 px-3 text-left">Rating & Date</th>
-                      <th className="py-2 px-3 text-left">Review Excerpt</th>
-                      <th className="py-2 px-3 text-right">Actual Fraud Score</th>
-                      <th className="py-2 px-3 text-center">Decision</th>
-                      <th className="py-2 px-3 text-left">Relation Attention</th>
-                      <th className="py-2 px-3 text-center">Neighbors (RUR / RSR / RTR)</th>
-                      <th className="py-2 px-center text-right">Evidence</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {results.map((row) => {
-                      const pred = row.prediction;
-                      const isFlagged = pred?.decision === 'flagged';
-                      const att = pred?.attention_weights;
-                      const ev = pred?.evidence;
-
-                      return (
-                        <tr key={row.row_number} className="border-b border-[#edf0eb] hover:bg-[#fbfcf9]">
-                          <td className="py-2.5 px-3 font-mono text-[11px] text-[#22302a]">
-                            {row.uploaded_review_key || `Row #${row.row_number}`}
-                          </td>
-                          <td className="py-2.5 px-3 whitespace-nowrap text-[#74817b]">
-                            {row.review?.rating ? `${row.review.rating} ★` : '—'} ·{' '}
-                            {row.review?.reviewed_at
-                              ? new Date(row.review.reviewed_at).toLocaleDateString()
-                              : '—'}
-                          </td>
-                          <td className="py-2.5 px-3 max-w-xs truncate text-[#22302a]" title={row.review?.review_text || ''}>
-                            {row.review?.review_text || '—'}
-                          </td>
-                          <td className="py-2.5 px-3 text-right font-mono font-semibold">
-                            {pred ? (
-                              <span className={isFlagged ? 'text-rose-600' : 'text-emerald-700'}>
-                                {pred.risk_score.toFixed(4)}
-                              </span>
-                            ) : (
-                              <span className="text-[#9ba6a0] font-normal">Pending</span>
-                            )}
-                          </td>
-                          <td className="py-2.5 px-3 text-center">
-                            {pred ? (
-                              <span
-                                className={`inline-block px-2 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wider ${
-                                  isFlagged
-                                    ? 'bg-rose-100 text-rose-700 border border-rose-200'
-                                    : 'bg-emerald-100 text-emerald-800 border border-emerald-200'
-                                }`}
-                              >
-                                {isFlagged ? 'Flagged' : 'Cleared'}
-                              </span>
-                            ) : (
-                              <span className="subtle-tag">{row.row_state}</span>
-                            )}
-                          </td>
-                          <td className="py-2.5 px-3">
-                            {att ? (
-                              <div className="space-y-1 w-28">
-                                <div className="h-1.5 w-full bg-[#f0f2ee] rounded-full overflow-hidden flex">
-                                  <div
-                                    className="bg-indigo-500"
-                                    style={{ width: `${((att.rur || 0) * 100).toFixed(0)}%` }}
-                                    title={`RUR: ${((att.rur || 0) * 100).toFixed(1)}%`}
-                                  />
-                                  <div
-                                    className="bg-emerald-500"
-                                    style={{ width: `${((att.rsr || 0) * 100).toFixed(0)}%` }}
-                                    title={`RSR: ${((att.rsr || 0) * 100).toFixed(1)}%`}
-                                  />
-                                  <div
-                                    className="bg-amber-500"
-                                    style={{ width: `${((att.rtr || 0) * 100).toFixed(0)}%` }}
-                                    title={`RTR: ${((att.rtr || 0) * 100).toFixed(1)}%`}
-                                  />
-                                </div>
-                                <div className="flex justify-between text-[9px] text-[#74817b] font-mono">
-                                  <span title="Reviewer relation attention">U:{((att.rur || 0) * 100).toFixed(0)}%</span>
-                                  <span title="Product-Rating relation attention">S:{((att.rsr || 0) * 100).toFixed(0)}%</span>
-                                  <span title="Temporal relation attention">T:{((att.rtr || 0) * 100).toFixed(0)}%</span>
-                                </div>
-                              </div>
-                            ) : (
-                              <span className="text-[#9ba6a0] text-[10px]">—</span>
-                            )}
-                          </td>
-                          <td className="py-2.5 px-3 text-center text-[11px] font-mono text-[#74817b]">
-                            {ev ? (
-                              <span>
-                                {ev.neighbor_counts.rur ?? 0} / {ev.neighbor_counts.rsr ?? 0} / {ev.neighbor_counts.rtr ?? 0}
-                              </span>
-                            ) : (
-                              '—'
-                            )}
-                          </td>
-                          <td className="py-2.5 px-3 text-right">
-                            {ev ? (
-                              <button
-                                onClick={() =>
-                                  setSelectedEvidence({
-                                    reviewKey: row.uploaded_review_key || `Row #${row.row_number}`,
-                                    evidence: ev,
-                                    score: pred!.risk_score,
-                                    decision: pred!.decision,
-                                  })
-                                }
-                                className="text-action text-[11px] inline-flex items-center gap-1 font-medium hover:underline"
-                              >
-                                View evidence
-                              </button>
-                            ) : (
-                              <span className="text-[#9ba6a0] text-[10px]">—</span>
-                            )}
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
-
-          {/* Evidence Modal / Drawer */}
-          {selectedEvidence && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-              <div className="bg-[#fffefa] border border-[#e2e5df] rounded-xl shadow-xl max-w-lg w-full p-5 space-y-4">
-                <div className="flex items-center justify-between pb-3 border-b border-[#edf0eb]">
-                  <div>
-                    <h4 className="text-sm font-bold text-[#22302a]">
-                      Graph Evidence · {selectedEvidence.reviewKey}
-                    </h4>
-                    <p className="text-xs text-[#74817b]">
-                      Risk assessment: <strong>{selectedEvidence.score.toFixed(4)}</strong> ({selectedEvidence.decision})
-                    </p>
-                  </div>
-                  <button
-                    onClick={() => setSelectedEvidence(null)}
-                    className="text-[#9ba6a0] hover:text-[#22302a] text-lg font-bold"
-                  >
-                    ×
-                  </button>
-                </div>
-
-                <div className="space-y-3 text-xs">
-                  <div>
-                    <span className="text-[#74817b] block text-[10px] uppercase font-semibold">Context Cutoff</span>
-                    <span className="font-mono text-[#22302a]">
-                      {selectedEvidence.evidence.context_cutoff_at
-                        ? new Date(selectedEvidence.evidence.context_cutoff_at).toISOString()
-                        : '—'}
-                    </span>
-                  </div>
-
-                  <div>
-                    <span className="text-[#74817b] block text-[10px] uppercase font-semibold">
-                      Connected Historic Neighbors ({selectedEvidence.evidence.historic_review_ids.length})
-                    </span>
-                    <div className="bg-[#f9faf7] rounded p-2 font-mono text-[11px] max-h-20 overflow-y-auto">
-                      {selectedEvidence.evidence.historic_review_ids.length > 0
-                        ? selectedEvidence.evidence.historic_review_ids.join(', ')
-                        : 'No direct historic connections found within cutoff'}
-                    </div>
-                  </div>
-
-                  <div className="space-y-1.5 pt-2 border-t border-[#edf0eb]">
-                    <span className="text-[#74817b] block text-[10px] uppercase font-semibold">
-                      Deterministic Integrity Hashes
-                    </span>
-                    <div className="space-y-1 font-mono text-[10px]">
-                      <div className="flex justify-between items-center bg-[#f4f6f3] px-2 py-1 rounded">
-                        <span className="text-[#74817b]">Stitched Graph:</span>
-                        <span className="text-[#22302a]">
-                          {truncateHash(selectedEvidence.evidence.stitched_graph_sha256, 12, 12)}
-                        </span>
-                      </div>
-                      <div className="flex justify-between items-center bg-[#f4f6f3] px-2 py-1 rounded">
-                        <span className="text-[#74817b]">Input Features:</span>
-                        <span className="text-[#22302a]">
-                          {truncateHash(selectedEvidence.evidence.input_feature_sha256, 12, 12)}
-                        </span>
-                      </div>
-                      <div className="flex justify-between items-center bg-[#f4f6f3] px-2 py-1 rounded">
-                        <span className="text-[#74817b]">Embedding SHA:</span>
-                        <span className="text-[#22302a]">
-                          {truncateHash(selectedEvidence.evidence.embedding_sha256, 12, 12)}
-                        </span>
-                      </div>
-                      <div className="flex justify-between items-center bg-[#f4f6f3] px-2 py-1 rounded">
-                        <span className="text-[#74817b]">Bundle Manifest:</span>
-                        <span className="text-[#22302a]">
-                          {truncateHash(selectedEvidence.evidence.bundle_manifest_sha256, 12, 12)}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="pt-2 flex justify-end">
-                  <button
-                    onClick={() => setSelectedEvidence(null)}
-                    className="button-secondary text-xs px-3 py-1.5"
-                  >
-                    Close
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
-        </>
-      )}
-    </div>
-  );
+  const stats = useMemo(() => resultSummary(results), [results]);
+  const filteredRows = useMemo(() => selectResultRows(results, query, decision, order), [results, query, decision, order]);
+  const visibleRows = filteredRows.slice(page * 25, (page + 1) * 25);
+  const threshold = currentBatch?.inference_run?.threshold ?? null;
+  const evidence = results.find(row => row.prediction?.evidence)?.prediction?.evidence;
+  const modelName = modelVersions.find(model => model.supported_inference_mode === 'inductive_batch_v1')?.version_key;
+  const exportResults = () => {
+    if (!currentBatch) return;
+    const url = URL.createObjectURL(new Blob([resultsCsv(results, currentBatch.batch_analysis_id, threshold)], {type: 'text/csv;charset=utf-8'}));
+    const anchor = document.createElement('a'); anchor.href = url; anchor.download = `neurograph-batch-${currentBatch.batch_analysis_id}-results.csv`; anchor.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  };
+  return <div className="analysis-results">
+    {showHeading && <div className="analysis-toolbar"><label>Saved CSV analysis<select value={selectedBatchId ?? ''} onChange={e => setSelectedBatchId(Number(e.target.value))}><option value="" disabled>Select an upload</option>{batches.map(batch => <option key={batch.batch_analysis_id} value={batch.batch_analysis_id}>Batch #{batch.batch_analysis_id} · {batch.row_count} rows · {batch.status}</option>)}</select></label><button className="button-secondary" disabled={loading || scoring} onClick={() => { if (selectedBatchId) void fetchBatchDetails(selectedBatchId); void fetchBatches(); }}><RefreshCw size={14}/> Refresh</button></div>}
+    {loading && <p className="notice-card" role="status">Loading saved results…</p>}
+    {!loading && error && <p className="notice-card notice-error" role="alert">{error}</p>}
+    {!loading && !error && !currentBatch && <p className="notice-card">No saved analysis yet. <Link href="/reviews/submit" className="text-action">Upload a CSV →</Link></p>}
+    {!loading && !error && currentBatch && <>
+      <section className="panel result-takeaway" aria-label="Your result in plain English"><p className="eyebrow">Your result, explained</p><h2>{stats.scored ? `${stats.flagged} of ${stats.scored} scored reviews flagged for human review` : 'No model decisions saved yet'}</h2><p>{stats.scored ? `${stats.notFlagged} scored reviews were not flagged. ${stats.flagged === 0 ? 'No score crossed the saved decision cutoff.' : 'Start with the flagged reviews below, read the full text, then inspect their connections.'}` : 'Imported rows and model predictions are separate steps. Check the processing state and any import errors below.'}</p><div className="result-counts"><span>{currentBatch.row_count} submitted</span><span>{stats.scored} scored</span><span>{stats.unscored} accepted, unscored</span><span>{stats.rejected} rejected</span></div><p className="result-caution"><strong>A flag is not proof of fraud. “Not flagged” is not a guarantee of a genuine review.</strong> A score is a model signal from 0 to 1, not a calibrated percentage chance. This unlabelled upload has no measured accuracy.</p>{stats.flagged > 0 && <button className="button-secondary" onClick={() => {setDecision('flagged'); document.getElementById('saved-review-list')?.scrollIntoView({behavior:'smooth', block:'start'});}}>Inspect flagged reviews</button>}</section>
+      {['running','queued'].includes(currentBatch.status) && <div className="notice-card" role="status"><strong>Analysis {currentBatch.status}</strong><p>This page checks for saved results automatically. You can reopen it from Products &amp; history.</p>{currentBatch.status === 'queued' && <button className="button-secondary" disabled={scoring} onClick={handleScoreBatch}>{scoring ? 'Processing…' : 'Process now'}</button>}</div>}
+      {['failed','blocked'].includes(currentBatch.status) && <div className="notice-card notice-error" role="alert"><strong>Analysis {currentBatch.status}</strong><p>{currentBatch.job?.last_error || currentBatch.blocking_reasons.join(', ') || 'Scoring could not finish.'}</p>{currentBatch.status === 'failed' && currentBatch.accepted_count > 0 && <button className="button-secondary" disabled={scoring} onClick={handleScoreBatch}>{scoring ? 'Retrying…' : 'Retry analysis'}</button>}</div>}
+      {stats.rejected > 0 && <div className="notice-card notice-error"><strong>{stats.rejected} rows were rejected during import</strong><p>Rejected rows have no prediction. Filter the list to “Import errors” to see what needs correcting.</p><button className="text-action" onClick={() => setDecision('rejected')}>Show import errors →</button></div>}
+      <details className="panel result-method"><summary>How to read scores, connections and this run’s settings</summary><div className="result-method-grid"><article><h3>Decision cutoff</h3><p>{threshold == null ? 'No run cutoff recorded yet.' : `The saved cutoff is ${threshold.toFixed(7)}. A score at or above it is flagged for human review; a lower score is not flagged.`} The model’s recommended cutoff was selected on validation data, not adjusted to make your file look better.</p></article><article><h3>Historical context</h3><p>{currentBatch.historic_graph_snapshot_id ? `Snapshot #${currentBatch.historic_graph_snapshot_id}` : 'No snapshot selected'}{snapshot ? ` · ${snapshot.node_count.toLocaleString()} stored review nodes` : ''}. This is the available reference graph, not the number of neighbors used for every row. Only eligible earlier connections enter a row’s context.</p></article><article><h3>Relationship types</h3><p>Same author (RUR); same product and star rating (RSR); same product within 30 days (RTR). These links can also occur naturally. Counts and attention weights do not prove manipulation.</p></article></div><details><summary>Recorded model and file fingerprints</summary><dl className="identity-list"><dt>Model family</dt><dd>{modelName || 'Not available from registry'}</dd><dt>Scoring run</dt><dd>{currentBatch.inference_run?.run_key || 'Not assigned'}</dd><dt>Snapshot key</dt><dd>{snapshot?.snapshot_key || 'Not available'}</dd><dt>Relation policy</dt><dd>{evidence?.relation_schema_version || 'No saved evidence yet'}</dd><dt>Scored bundle manifest</dt><dd>{evidence?.bundle_manifest_sha256 || 'No saved evidence yet'}</dd><dt>Uploaded file SHA-256</dt><dd>{currentBatch.upload_sha256}</dd></dl><p>Fingerprints identify the saved inputs and model files. They do not establish prediction correctness. The model family above is the registry’s inductive entry; the saved bundle fingerprint is the identity recorded for this analysis.</p></details></details>
+      <section className="panel" id="saved-review-list"><div className="section-heading"><div><p className="eyebrow">Saved row-level decisions</p><h2>Review your results</h2></div><button className="button-secondary" disabled={!results.length} onClick={exportResults}>Download all results CSV</button></div><p>Highest scores appear first. Open a review to read its full text, inspect its recorded context and add human feedback. The download includes all rows, regardless of your filters.</p><div className="analysis-toolbar"><label>Search review text or IDs<input type="search" value={query} onChange={e => setQuery(e.target.value)} placeholder="Review, author or product ID"/></label><label>Show<select value={decision} onChange={e => setDecision(e.target.value)}><option value="all">All rows</option><option value="flagged">Flagged for review</option><option value="cleared">Not flagged</option><option value="rejected">Import errors</option><option value="unscored">Accepted, unscored</option></select></label><label>Order<select value={order} onChange={e => setOrder(e.target.value)}><option value="score">Highest score first</option><option value="row">Original CSV row</option></select></label></div><div className="table-scroll"><table className="evidence-table result-table"><caption>{filteredRows.length} matching rows · {results.length} total saved row outcomes</caption><thead><tr><th>Review / CSV row</th><th>Review text</th><th>Model risk score</th><th>Saved decision</th><th>Inspect</th></tr></thead><tbody>{visibleRows.map(row => <tr key={row.row_number}><td><strong className="registry-key">{row.uploaded_review_key || 'No source ID'}</strong><small>CSV row {row.row_number}{row.review ? ` · internal review #${row.review.review_id}` : ''}</small><small>{row.review?.rating == null ? '' : `${row.review.rating}/5 stars`}{row.review?.reviewed_at ? ` · ${new Date(row.review.reviewed_at).toLocaleDateString()}` : ''}</small></td><td><p className="review-excerpt">{row.review?.review_text || row.validation_errors.map(e => e.message || e.code).join('; ') || 'No review text stored'}</p></td><td>{row.prediction ? row.prediction.risk_score.toFixed(4) : '—'}</td><td><span className={row.prediction?.decision === 'flagged' ? 'decision-flagged' : 'decision-neutral'}>{row.prediction ? row.prediction.decision === 'flagged' ? 'Flagged for review' : 'Not flagged' : row.row_state === 'rejected' ? 'Import error' : 'Not scored'}</span></td><td><button className="text-action" onClick={() => setSelectedRow(row)} aria-label={`Open review ${row.uploaded_review_key || `CSV row ${row.row_number}`}`}>Open review →</button></td></tr>)}</tbody></table></div>{!filteredRows.length && <p>No rows match these filters. <button className="text-action" onClick={() => {setQuery(''); setDecision('all');}}>Show all rows</button></p>}<div className="analysis-pagination"><button className="button-secondary" disabled={page === 0} onClick={() => setPage(p => p - 1)}>Previous reviews</button><span>{filteredRows.length ? page * 25 + 1 : 0}–{Math.min((page+1)*25,filteredRows.length)} of {filteredRows.length}</span><button className="button-secondary" disabled={(page+1)*25 >= filteredRows.length} onClick={() => setPage(p => p+1)}>Next reviews</button></div></section>
+      {currentBatch.status === 'completed' && <BatchRelationshipGraph key={currentBatch.batch_analysis_id} batchId={currentBatch.batch_analysis_id}/>}
+      {selectedRow && <dialog ref={dialog} className="review-dialog" aria-labelledby="review-detail-title" onCancel={() => setSelectedRow(null)} onClose={() => setSelectedRow(null)}><header><div><p className="eyebrow">CSV row {selectedRow.row_number}</p><h2 id="review-detail-title">{selectedRow.uploaded_review_key || 'Review details'}</h2></div><button autoFocus className="button-secondary" onClick={() => {dialog.current?.close(); setSelectedRow(null);}}>Close review</button></header><div className="review-dialog-body"><p><strong>{selectedRow.prediction ? selectedRow.prediction.decision === 'flagged' ? 'Flagged for human review' : 'Not flagged by this model run' : 'No model prediction'}</strong>{selectedRow.prediction ? ` · score ${selectedRow.prediction.risk_score.toFixed(4)}` : ''}{threshold != null ? ` · run cutoff ${threshold.toFixed(7)}` : ''}</p><p>Read the text and context before reaching a conclusion. Neither the score nor a shared link proves that this review is fake.</p><h3>Full review text</h3><p className="full-review-text">{selectedRow.review?.review_text || 'No accepted text stored for this row.'}</p>{selectedRow.validation_errors.length > 0 && <p className="notice-error">{selectedRow.validation_errors.map(e => e.message || e.code).join('; ')}</p>}{selectedRow.review && <><p>Internal review #{selectedRow.review.review_id} · author #{selectedRow.review.reviewer_id ?? 'unrecorded'} · product #{selectedRow.review.product_id ?? 'unrecorded'}</p><div className="review-actions"><Link className="button-primary" href={`/feedback?review_id=${selectedRow.review.review_id}&batch_id=${currentBatch.batch_analysis_id}`}>Record human feedback</Link>{selectedRow.review.reviewer_id && <Link className="button-secondary" href={`/reviews?reviewer_id=${selectedRow.review.reviewer_id}`}>Other visible reviews by this author</Link>}</div></>}{selectedRow.prediction?.evidence ? <><h3>Saved relationship context</h3><p>Same author: {selectedRow.prediction.evidence.neighbor_counts.rur ?? 0} · Same product/rating: {selectedRow.prediction.evidence.neighbor_counts.rsr ?? 0} · Same product within 30 days: {selectedRow.prediction.evidence.neighbor_counts.rtr ?? 0}. A zero means no eligible direct connections of that type were saved; the model still uses text and numeric features.</p><p>Context cutoff: {selectedRow.prediction.evidence.context_cutoff_at ? new Date(selectedRow.prediction.evidence.context_cutoff_at).toLocaleString() : 'Not recorded'}</p>{selectedRow.prediction.attention_weights && <p>Model relation attention: same author {((selectedRow.prediction.attention_weights.rur ?? 0)*100).toFixed(1)}%; same product/rating {((selectedRow.prediction.attention_weights.rsr ?? 0)*100).toFixed(1)}%; timing {((selectedRow.prediction.attention_weights.rtr ?? 0)*100).toFixed(1)}%. These are learned relative weights, not probabilities of fraud or a causal explanation.</p>}<details><summary>Connected review IDs and integrity fingerprints</summary><p className="registry-key">Connected historical IDs: {selectedRow.prediction.evidence.historic_review_ids.join(', ') || 'None recorded'}</p><dl className="identity-list">{Object.entries(selectedRow.prediction.evidence).filter(([key]) => key.endsWith('sha256')).map(([key,value]) => <React.Fragment key={key}><dt>{key.replaceAll('_',' ')}</dt><dd>{String(value)}</dd></React.Fragment>)}</dl></details></> : <p>No graph evidence is saved for this row.</p>}</div></dialog>}
+    </>}
+  </div>;
 }

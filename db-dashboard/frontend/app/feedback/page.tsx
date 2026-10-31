@@ -1,6 +1,8 @@
 'use client';
 
-import { FormEvent, useCallback, useEffect, useState } from 'react';
+import { FormEvent, useCallback, useEffect, useState, Suspense } from 'react';
+import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import AppShell from '../components/AppShell';
 import { useRequireAuth } from '../hooks/useRequireAuth';
 import { useAuth } from '../context/AuthContext';
@@ -10,7 +12,10 @@ type Feedback = { feedback_id: number; review_id: number; submitted_by_user_id: 
 type Review = { review_id: number; review_text?: string; rating?: number };
 const blank = { review_id: '', feedback_type: 'review_quality', ground_truth_label: '', comment: '' };
 
-export default function FeedbackPage() {
+function FeedbackContent() {
+  const searchParams = useSearchParams();
+  const batchParam = searchParams.get('batch_id') || '';
+  const backToBatch = /^[1-9]\d*$/.test(batchParam) ? batchParam : null;
   const { isLoading, isAuthenticated, isAdmin } = useRequireAuth();
   const { user } = useAuth();
   const [items, setItems] = useState<Feedback[]>([]);
@@ -25,6 +30,11 @@ export default function FeedbackPage() {
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
   const [summary, setSummary] = useState<Record<string, number> | null>(null);
+
+  useEffect(() => {
+    const reviewId = searchParams.get('review_id') || '';
+    if (/^[1-9]\d*$/.test(reviewId)) setForm(current => ({...current, review_id: reviewId}));
+  }, [searchParams]);
 
   const load = useCallback(async () => {
     try {
@@ -52,6 +62,7 @@ export default function FeedbackPage() {
   }
   if (isLoading || !isAuthenticated) return <div className="loading-workspace">Loading workspace...</div>;
   return <AppShell>
+    {backToBatch && <Link className="back-link" href={`/products/${backToBatch}`}>← Back to saved analysis #{backToBatch}</Link>}
     <header className="page-header"><div><p className="eyebrow">HUMAN REVIEW</p><h1>Review feedback</h1><p>Record an investigation note or a proposed label correction. Feedback does not change saved model scores or retrain the model.</p></div></header>
     {error && <p role="alert" className="feedback-error">{error}</p>}
     {notice && <p role="status" className="feedback-notice">{notice}</p>}
@@ -75,4 +86,8 @@ export default function FeedbackPage() {
       <div className="feedback-actions"><button disabled={!offset} className="button-secondary" onClick={() => setOffset(Math.max(0,offset-10))}>Previous</button><span>{total ? `${offset+1}-${Math.min(offset+10,total)} of ${total}` : '0 results'}</span><button disabled={offset+10 >= total} className="button-secondary" onClick={() => setOffset(offset+10)}>Next</button></div>
     </section>
   </AppShell>;
+}
+
+export default function FeedbackPage() {
+  return <Suspense fallback={<div className="session-loading">Loading feedback…</div>}><FeedbackContent/></Suspense>;
 }
