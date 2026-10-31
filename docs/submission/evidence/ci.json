@@ -1,37 +1,25 @@
 {
-  "checked_at_utc": "2026-10-30T21:54:41.086137+00:00",
-  "source_commit": "5a259e9323ae5aafebfc7906670f46a66dfbe61a",
-  "run_id": 41132134731,
-  "url": "https://github.com/Eldo-John-Giby/NeuroGraph-DB/actions/runs/41132134731",
+  "date": "2026-10-31",
+  "source_commit": "6b5c742f8887f89239b3d1ec8241e4b1456315b0",
+  "run_id": 41171173940,
+  "url": "https://github.com/Eldo-John-Giby/NeuroGraph-DB/actions/runs/41171173940",
   "conclusion": "success",
   "jobs": [
     {
-      "name": "Build deployable Docker image",
-      "status": "completed",
+      "name": "Next.js lint build and authentication tests",
       "conclusion": "success",
-      "started_at": "2026-10-30T21:35:10Z",
-      "completed_at": "2026-10-30T21:36:22Z",
-      "html_url": "https://github.com/Eldo-John-Giby/NeuroGraph-DB/actions/runs/41132134731/job/124325417347"
+      "url": "https://github.com/Eldo-John-Giby/NeuroGraph-DB/actions/runs/41171173940/job/124449249958"
     },
     {
-      "name": "Next.js lint build and authentication tests",
-      "status": "completed",
+      "name": "Build deployable Docker image",
       "conclusion": "success",
-      "started_at": "2026-10-30T21:35:11Z",
-      "completed_at": "2026-10-30T21:36:06Z",
-      "html_url": "https://github.com/Eldo-John-Giby/NeuroGraph-DB/actions/runs/41132134731/job/124325417796"
+      "url": "https://github.com/Eldo-John-Giby/NeuroGraph-DB/actions/runs/41171173940/job/124449249970"
     },
     {
       "name": "FastAPI tests and PostgreSQL database features",
-      "status": "completed",
       "conclusion": "success",
-      "started_at": "2026-10-30T21:35:10Z",
-      "completed_at": "2026-10-30T21:37:12Z",
-      "html_url": "https://github.com/Eldo-John-Giby/NeuroGraph-DB/actions/runs/41132134731/job/124325417859"
+      "url": "https://github.com/Eldo-John-Giby/NeuroGraph-DB/actions/runs/41171173940/job/124449250099"
     }
   ],
-  "notes": [
-    "Public-repository Linux jobs include real disposable PostgreSQL. Private-model artifact checks are exercised locally; clean CI explicitly skips unavailable private bundles.",
-    "The private mirror skips hosted jobs to avoid metered allowances."
-  ]
+  "release_boundary": "CI tests and builds automatically; production deployment is a separate explicit CLI step. Documentation-only commits may follow this tested application revision."
 }

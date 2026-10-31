@@ -11,6 +11,7 @@ Start with the root README for the live application and installation. The mainta
 - [Complete ER diagram](submission/ERD.md), [data dictionary](submission/DATA_DICTIONARY.md) and [normalization](submission/NORMALIZATION.md).
 - [Reproduction](REPRODUCIBILITY.md), [deployment](../deploy/aws/README.md) and [release checks](RELEASE_CHECKLIST.md).
 - [Course report](submission/REPORT.md), [rubric mapping](submission/RUBRIC.md) and [demonstration](submission/DEMO.md).
+- [Final usability review](USABILITY_REVIEW.md): concrete findings, fixes and live workflow checks.
 - [CI and release boundaries](CI_AND_RELEASE.md), including the pipeline bonus evidence.
 - [Independent review brief](review/INDEPENDENT_REVIEW.md).
 - [Plain-English viva guide](defense/BEGINNER_VIVA_GUIDE.md).

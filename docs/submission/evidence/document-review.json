@@ -1,10 +1,10 @@
 {
   "date": "2026-10-31",
   "pages": 41,
-  "visual_review": "All 41 final page images inspected at their original 100-dpi render size. Cover, figures, benchmark tables, screenshots, appendices and rubric matrix checked for clipping and legibility. PDF text bounds and required identifiers/metrics checked.",
+  "visual_review": "All 41 report pages reviewed. Final usability revision changes only pages 14, 23 and 24; all three inspected at original 100-dpi render size. The remaining 38 final page images are byte-identical to the previously inspected report. No clipped text in automatic page-bounds checks.",
   "sha256": {
-    "NeuroGraph_DB_Final_Report.pdf": "a5b69b248ba4118c45be27f946418b6b91cfa253b834093c48ae0e9fa7834442",
-    "NeuroGraph_DB_Final_Report.docx": "a65f35168c46e11af5dad9adca8f82266ac02c95f86f9ce21e5bb419c3367f4a"
+    "NeuroGraph_DB_Final_Report.pdf": "ed315d7e9465070b039ab0b8b9565746351105945bb926d8d0386bb7c9d0e026",
+    "NeuroGraph_DB_Final_Report.docx": "0ad3e8c37169920fd73ac6b1cf9d0deaec2fb784e8b2fc9ede745fa5b5a12056"
   },
   "private_identifiers_in_public_source": false,
   "out_of_page_text_characters": 0

@@ -1,0 +1,60 @@
+{
+  "date": "2026-10-31",
+  "application_commit": "6b5c742f8887f89239b3d1ec8241e4b1456315b0",
+  "deployment_id": "dpl_H4m3Z6wtpi9A3UULEvfAeWEWM6du",
+  "production_url": "https://frontend-three-snowy-10.vercel.app",
+  "ci": {
+    "date": "2026-10-31",
+    "source_commit": "6b5c742f8887f89239b3d1ec8241e4b1456315b0",
+    "run_id": 41171173940,
+    "url": "https://github.com/Eldo-John-Giby/NeuroGraph-DB/actions/runs/41171173940",
+    "conclusion": "success",
+    "jobs": [
+      {
+        "name": "Next.js lint build and authentication tests",
+        "conclusion": "success",
+        "url": "https://github.com/Eldo-John-Giby/NeuroGraph-DB/actions/runs/41171173940/job/124449249958"
+      },
+      {
+        "name": "Build deployable Docker image",
+        "conclusion": "success",
+        "url": "https://github.com/Eldo-John-Giby/NeuroGraph-DB/actions/runs/41171173940/job/124449249970"
+      },
+      {
+        "name": "FastAPI tests and PostgreSQL database features",
+        "conclusion": "success",
+        "url": "https://github.com/Eldo-John-Giby/NeuroGraph-DB/actions/runs/41171173940/job/124449250099"
+      }
+    ],
+    "release_boundary": "CI tests and builds automatically; production deployment is a separate explicit CLI step. Documentation-only commits may follow this tested application revision."
+  },
+  "frontend_tests": {
+    "passed": 15,
+    "failed": 0,
+    "auth": 10,
+    "result_interpretation_and_export": 5
+  },
+  "production_build": "passed with lint and TypeScript checks",
+  "browser_checks": {
+    "desktop_viewport": [
+      1440,
+      1000
+    ],
+    "phone_viewport": [
+      390,
+      844
+    ],
+    "phone_page_width": 375,
+    "native_dialog_escape": "passed",
+    "flag_filter": "9 of 30 persisted decisions",
+    "author_filter": "ID 129 led to its one visible review",
+    "feedback_prefill": "internal review ID and return batch preserved",
+    "researcher_admin_ui": "menu absent and direct registry UI redirected",
+    "researcher_private_batch": "404 for other requester batch",
+    "sample_upload": "recovered existing batch 17 with original timestamp and predictions",
+    "downloaded_csv": "3 complete row outcomes, 2 persisted flagged decisions, saved cutoff 0.7870707",
+    "neo4j_graph": "3 reviews and 3 visible context links",
+    "failed_import": "no model decisions; missing scores not called genuine"
+  },
+  "cloud_changes": "Frontend update only; no AWS mutation, model replacement, paid upgrade or new resource."
+}

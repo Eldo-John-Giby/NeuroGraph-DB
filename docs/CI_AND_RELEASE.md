@@ -27,7 +27,7 @@ An explicit release is checked and verified separately. Backend scripts require 
 3. Explain: “When we change application code, GitHub runs our tests and builds on a fresh machine. If a check fails, we get a failed run to fix before releasing. Deployment is a separate explicit step.”
 4. For database evidence, open the backend job's PostgreSQL tests and then the actual procedure/trigger tests. A build-only workflow would not demonstrate these checks.
 
-The verified full run before this usability revision was https://github.com/Eldo-John-Giby/NeuroGraph-DB/actions/runs/41136859302 (commit `a2c7c2f953b11cffbbaae46fcd139a612bc78124`). Use the newer submitted revision's successful run when available; do not imply an older run tested later code.
+The verified full run for the final application code is https://github.com/Eldo-John-Giby/NeuroGraph-DB/actions/runs/41171173940 (commit `6b5c742f8887f89239b3d1ec8241e4b1456315b0`). Use the newer submitted revision's successful run when available; do not imply an older run tested later code.
 
 ## Bonus mapping
 
