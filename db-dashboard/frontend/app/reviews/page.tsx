@@ -1,10 +1,10 @@
-'use client';
+"use client";
 
-import React, { useEffect, useState, useCallback, Suspense } from 'react';
-import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
-import { Star, Plus, Filter, ClipboardList, X, Zap } from 'lucide-react';
-import AppShell from '../components/AppShell';
+import React, { useEffect, useState, useCallback, Suspense } from "react";
+import Link from "next/link";
+import { useSearchParams } from "next/navigation";
+import { Star, Plus, Filter, ClipboardList, X, Zap } from "lucide-react";
+import AppShell from "../components/AppShell";
 import {
   PageHeader,
   StatCard,
@@ -14,9 +14,9 @@ import {
   StatusBadge,
   Pagination,
   LoadingSpinner,
-} from '../components/ui';
-import { useRequireAuth } from '../hooks/useRequireAuth';
-import { apiRequest, getErrorMessage } from '../lib/api';
+} from "../components/ui";
+import { useRequireAuth } from "../hooks/useRequireAuth";
+import { apiRequest, getErrorMessage } from "../lib/api";
 
 interface ReviewItem {
   review_id: number;
@@ -59,27 +59,31 @@ function ReviewHistoryContent() {
   const [error, setError] = useState<string | null>(null);
 
   // Filter Form Inputs
-  const [sourceSystemInput, setSourceSystemInput] = useState('');
-  const [reviewerIdInput, setReviewerIdInput] = useState('');
-  const [productIdInput, setProductIdInput] = useState('');
-  const [groundTruthInput, setGroundTruthInput] = useState<'all' | 'true' | 'false'>('all');
+  const [sourceSystemInput, setSourceSystemInput] = useState("");
+  const [reviewerIdInput, setReviewerIdInput] = useState("");
+  const [productIdInput, setProductIdInput] = useState("");
+  const [groundTruthInput, setGroundTruthInput] = useState<
+    "all" | "true" | "false"
+  >("all");
 
   // Applied Filter State
   const [appliedFilters, setAppliedFilters] = useState<{
     source_system: string;
     reviewer_id: string;
     product_id: string;
-    ground_truth_available: 'all' | 'true' | 'false';
+    ground_truth_available: "all" | "true" | "false";
   }>({
-    source_system: '',
-    reviewer_id: '',
-    product_id: '',
-    ground_truth_available: 'all',
+    source_system: "",
+    reviewer_id: "",
+    product_id: "",
+    ground_truth_available: "all",
   });
 
   // Selected Review for Detail Modal / Slide-over
   const [selectedReview, setSelectedReview] = useState<ReviewItem | null>(null);
-  const [reviewPredictions, setReviewPredictions] = useState<PredictionItem[]>([]);
+  const [reviewPredictions, setReviewPredictions] = useState<PredictionItem[]>(
+    [],
+  );
   const [loadingPredictions, setLoadingPredictions] = useState(false);
   const [predictionsError, setPredictionsError] = useState<string | null>(null);
 
@@ -92,25 +96,27 @@ function ReviewHistoryContent() {
 
     try {
       const params = new URLSearchParams();
-      params.set('limit', String(limit));
-      params.set('offset', String(offset));
+      params.set("limit", String(limit));
+      params.set("offset", String(offset));
 
       if (appliedFilters.source_system.trim()) {
-        params.set('source_system', appliedFilters.source_system.trim());
+        params.set("source_system", appliedFilters.source_system.trim());
       }
       if (appliedFilters.reviewer_id.trim()) {
-        params.set('reviewer_id', appliedFilters.reviewer_id.trim());
+        params.set("reviewer_id", appliedFilters.reviewer_id.trim());
       }
       if (appliedFilters.product_id.trim()) {
-        params.set('product_id', appliedFilters.product_id.trim());
+        params.set("product_id", appliedFilters.product_id.trim());
       }
-      if (appliedFilters.ground_truth_available === 'true') {
-        params.set('ground_truth_available', 'true');
-      } else if (appliedFilters.ground_truth_available === 'false') {
-        params.set('ground_truth_available', 'false');
+      if (appliedFilters.ground_truth_available === "true") {
+        params.set("ground_truth_available", "true");
+      } else if (appliedFilters.ground_truth_available === "false") {
+        params.set("ground_truth_available", "false");
       }
 
-      const res = await apiRequest<ReviewListResponse>(`/api/v1/reviews?${params.toString()}`);
+      const res = await apiRequest<ReviewListResponse>(
+        `/api/v1/reviews?${params.toString()}`,
+      );
       setReviews(res.items || []);
       setTotal(res.total || 0);
     } catch (err: unknown) {
@@ -122,10 +128,10 @@ function ReviewHistoryContent() {
 
   // Catalog and analysis links must actually apply the author filter.
   useEffect(() => {
-    const id = searchParams.get('reviewer_id') || '';
-    const safeId = /^[1-9]\d*$/.test(id) ? id : '';
+    const id = searchParams.get("reviewer_id") || "";
+    const safeId = /^[1-9]\d*$/.test(id) ? id : "";
     setReviewerIdInput(safeId);
-    setAppliedFilters(filters => ({...filters, reviewer_id: safeId}));
+    setAppliedFilters((filters) => ({ ...filters, reviewer_id: safeId }));
     setOffset(0);
   }, [searchParams]);
 
@@ -150,7 +156,7 @@ function ReviewHistoryContent() {
 
       try {
         const res = await apiRequest<{ items: PredictionItem[] }>(
-          `/api/v1/reviews/${selectedReview.review_id}/predictions?limit=10&offset=0`
+          `/api/v1/reviews/${selectedReview.review_id}/predictions?limit=10&offset=0`,
         );
         if (isMounted) {
           setReviewPredictions(res.items || []);
@@ -186,16 +192,16 @@ function ReviewHistoryContent() {
 
   // Reset Filters
   const handleResetFilters = () => {
-    setSourceSystemInput('');
-    setReviewerIdInput('');
-    setProductIdInput('');
-    setGroundTruthInput('all');
+    setSourceSystemInput("");
+    setReviewerIdInput("");
+    setProductIdInput("");
+    setGroundTruthInput("all");
     setOffset(0);
     setAppliedFilters({
-      source_system: '',
-      reviewer_id: '',
-      product_id: '',
-      ground_truth_available: 'all',
+      source_system: "",
+      reviewer_id: "",
+      product_id: "",
+      ground_truth_available: "all",
     });
   };
 
@@ -203,7 +209,7 @@ function ReviewHistoryContent() {
     Boolean(appliedFilters.source_system) ||
     Boolean(appliedFilters.reviewer_id) ||
     Boolean(appliedFilters.product_id) ||
-    appliedFilters.ground_truth_available !== 'all';
+    appliedFilters.ground_truth_available !== "all";
 
   // Render Stars Helper
   const renderRating = (rating: number | null) => {
@@ -211,16 +217,21 @@ function ReviewHistoryContent() {
       return <span className="text-slate-500">—</span>;
     }
     return (
-      <div className="flex items-center gap-1.5" title={`Rating: ${rating} / 5`}>
+      <div
+        className="flex items-center gap-1.5"
+        title={`Rating: ${rating} / 5`}
+      >
         <div className="flex items-center gap-0.5 text-xs">
           {Array.from({ length: 5 }).map((_, i) => (
             <Star
               key={i}
-              className={`h-3 w-3 ${i < rating ? 'fill-amber-400 text-amber-400' : 'text-slate-700'}`}
+              className={`h-3 w-3 ${i < rating ? "fill-amber-400 text-amber-400" : "text-slate-700"}`}
             />
           ))}
         </div>
-        <span className="text-xs font-semibold text-slate-300 font-mono">({rating})</span>
+        <span className="text-xs font-semibold text-slate-300 font-mono">
+          ({rating})
+        </span>
       </div>
     );
   };
@@ -231,14 +242,17 @@ function ReviewHistoryContent() {
     try {
       const d = new Date(dateStr);
       return (
-        <span className="text-xs text-slate-300 whitespace-nowrap" title={d.toISOString()}>
-          {d.toLocaleDateString('en-US', {
-            month: 'short',
-            day: 'numeric',
-            year: 'numeric',
-          })}{' '}
+        <span
+          className="text-xs text-slate-300 whitespace-nowrap"
+          title={d.toISOString()}
+        >
+          {d.toLocaleDateString("en-US", {
+            month: "short",
+            day: "numeric",
+            year: "numeric",
+          })}{" "}
           <span className="text-slate-500 text-[11px]">
-            {d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+            {d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
           </span>
         </span>
       );
@@ -261,7 +275,7 @@ function ReviewHistoryContent() {
         {/* Page Header */}
         <PageHeader
           title="Review History"
-          subtitle="Explore ingested review records, graph connections, and ground-truth risk labels."
+          subtitle="Explore visible review records, source labels and saved model predictions."
           actions={
             <Link
               href="/reviews/submit"
@@ -282,9 +296,13 @@ function ReviewHistoryContent() {
           />
           <StatCard
             label="Active Filter"
-            value={hasActiveFilters ? 'Applied' : 'None'}
-            color={hasActiveFilters ? 'sky' : 'indigo'}
-            subtext={hasActiveFilters ? 'Showing filtered results' : 'Viewing all records'}
+            value={hasActiveFilters ? "Applied" : "None"}
+            color={hasActiveFilters ? "sky" : "indigo"}
+            subtext={
+              hasActiveFilters
+                ? "Showing filtered results"
+                : "Viewing all records"
+            }
           />
           <StatCard
             label="Page Size"
@@ -370,7 +388,11 @@ function ReviewHistoryContent() {
                 </label>
                 <select
                   value={groundTruthInput}
-                  onChange={(e) => setGroundTruthInput(e.target.value as 'all' | 'true' | 'false')}
+                  onChange={(e) =>
+                    setGroundTruthInput(
+                      e.target.value as "all" | "true" | "false",
+                    )
+                  }
                   className="w-full rounded-lg border border-slate-700 bg-slate-950/80 px-3 py-1.5 text-xs text-white focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
                 >
                   <option value="all">All Reviews</option>
@@ -409,8 +431,8 @@ function ReviewHistoryContent() {
             title="No reviews found"
             message={
               hasActiveFilters
-                ? 'No review records match the active filter criteria. Try adjusting or clearing your filters.'
-                : 'No reviews have been ingested into the system yet. Submit your first review to get started.'
+                ? "No review records match the active filter criteria. Try adjusting or clearing your filters."
+                : "No reviews have been ingested into the system yet. Submit your first review to get started."
             }
             action={
               hasActiveFilters ? (
@@ -464,13 +486,16 @@ function ReviewHistoryContent() {
                 </thead>
                 <tbody className="divide-y divide-slate-800/50">
                   {reviews.map((r) => {
-                    const isSelected = selectedReview?.review_id === r.review_id;
+                    const isSelected =
+                      selectedReview?.review_id === r.review_id;
                     return (
                       <tr
                         key={r.review_id}
                         onClick={() => setSelectedReview(r)}
                         className={`cursor-pointer transition-colors hover:bg-slate-800/40 ${
-                          isSelected ? 'bg-indigo-950/30 border-l-2 border-indigo-500' : ''
+                          isSelected
+                            ? "bg-indigo-950/30 border-l-2 border-indigo-500"
+                            : ""
                         }`}
                       >
                         {/* Review ID */}
@@ -498,12 +523,20 @@ function ReviewHistoryContent() {
 
                         {/* Reviewer ID */}
                         <td className="px-4 py-3.5 whitespace-nowrap text-xs text-slate-300 font-mono">
-                          {r.reviewer_id !== null ? `#${r.reviewer_id}` : <span className="text-slate-500">—</span>}
+                          {r.reviewer_id !== null ? (
+                            `#${r.reviewer_id}`
+                          ) : (
+                            <span className="text-slate-500">—</span>
+                          )}
                         </td>
 
                         {/* Product ID */}
                         <td className="px-4 py-3.5 whitespace-nowrap text-xs text-slate-300 font-mono">
-                          {r.product_id !== null ? `#${r.product_id}` : <span className="text-slate-500">—</span>}
+                          {r.product_id !== null ? (
+                            `#${r.product_id}`
+                          ) : (
+                            <span className="text-slate-500">—</span>
+                          )}
                         </td>
 
                         {/* Rating */}
@@ -581,43 +614,66 @@ function ReviewHistoryContent() {
                 {/* Metadata Grid */}
                 <div className="grid grid-cols-2 gap-4 rounded-xl border border-slate-800 bg-slate-950/60 p-4 text-xs">
                   <div>
-                    <p className="text-slate-500 font-semibold uppercase text-[10px]">Source System</p>
+                    <p className="text-slate-500 font-semibold uppercase text-[10px]">
+                      Source System
+                    </p>
                     <p className="text-slate-200 mt-0.5 font-medium">
-                      {selectedReview.source_system || '—'}
+                      {selectedReview.source_system || "—"}
                     </p>
                   </div>
                   <div>
-                    <p className="text-slate-500 font-semibold uppercase text-[10px]">Source Key</p>
+                    <p className="text-slate-500 font-semibold uppercase text-[10px]">
+                      Source Key
+                    </p>
                     <p className="text-slate-200 mt-0.5 font-mono">
-                      {selectedReview.source_review_key || '—'}
+                      {selectedReview.source_review_key || "—"}
                     </p>
                   </div>
                   <div>
-                    <p className="text-slate-500 font-semibold uppercase text-[10px]">Reviewer ID</p>
+                    <p className="text-slate-500 font-semibold uppercase text-[10px]">
+                      Reviewer ID
+                    </p>
                     <p className="text-slate-200 mt-0.5 font-mono">
-                      {selectedReview.reviewer_id ? `#${selectedReview.reviewer_id}` : '—'}
+                      {selectedReview.reviewer_id
+                        ? `#${selectedReview.reviewer_id}`
+                        : "—"}
                     </p>
                   </div>
                   <div>
-                    <p className="text-slate-500 font-semibold uppercase text-[10px]">Product ID</p>
+                    <p className="text-slate-500 font-semibold uppercase text-[10px]">
+                      Product ID
+                    </p>
                     <p className="text-slate-200 mt-0.5 font-mono">
-                      {selectedReview.product_id ? `#${selectedReview.product_id}` : '—'}
+                      {selectedReview.product_id
+                        ? `#${selectedReview.product_id}`
+                        : "—"}
                     </p>
                   </div>
                   <div>
-                    <p className="text-slate-500 font-semibold uppercase text-[10px]">Rating</p>
-                    <div className="mt-0.5">{renderRating(selectedReview.rating)}</div>
+                    <p className="text-slate-500 font-semibold uppercase text-[10px]">
+                      Rating
+                    </p>
+                    <div className="mt-0.5">
+                      {renderRating(selectedReview.rating)}
+                    </div>
                   </div>
                   <div>
-                    <p className="text-slate-500 font-semibold uppercase text-[10px]">Reviewed At</p>
-                    <p className="text-slate-200 mt-0.5">{formatDate(selectedReview.reviewed_at)}</p>
+                    <p className="text-slate-500 font-semibold uppercase text-[10px]">
+                      Reviewed At
+                    </p>
+                    <p className="text-slate-200 mt-0.5">
+                      {formatDate(selectedReview.reviewed_at)}
+                    </p>
                   </div>
                   <div className="col-span-2 border-t border-slate-800/80 pt-2 flex items-center justify-between">
                     <span className="text-slate-500 uppercase text-[10px] font-semibold">
                       Ground Truth Status
                     </span>
                     {selectedReview.has_ground_truth ? (
-                      <StatusBadge status="Verified Labeled" variant="success" />
+                      <StatusBadge
+                        status="Dataset label available"
+                        variant="success"
+                      />
                     ) : (
                       <StatusBadge status="Unlabeled" variant="neutral" />
                     )}
@@ -631,7 +687,9 @@ function ReviewHistoryContent() {
                   </h4>
                   <div className="rounded-xl border border-slate-800 bg-slate-950/70 p-4 text-xs font-mono text-slate-200 whitespace-pre-wrap leading-relaxed max-h-48 overflow-y-auto">
                     {selectedReview.review_text || (
-                      <span className="text-slate-500 italic">No text content provided.</span>
+                      <span className="text-slate-500 italic">
+                        No text content provided.
+                      </span>
                     )}
                   </div>
                 </div>
@@ -639,16 +697,17 @@ function ReviewHistoryContent() {
                 {/* Prior Inference Predictions */}
                 <div>
                   <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2 flex items-center justify-between">
-                    <span>ML Risk Predictions</span>
+                    <span>Saved model predictions</span>
                     <span className="text-[10px] font-normal text-slate-500">
                       {reviewPredictions.length} recorded
                     </span>
                   </h4>
+                  <p className="text-xs text-slate-400 mb-3">Scores are model signals from 0 to 1, not calibrated percentages. Different runs can use different models or cutoffs; a flag needs human investigation.</p>
                   {loadingPredictions ? (
                     <LoadingSpinner text="Loading predictions..." />
                   ) : predictionsError ? (
                     <div className="rounded-lg border border-slate-800 bg-slate-950/50 p-3 text-xs text-slate-400">
-                      No prediction records available.
+                      Could not load predictions: {predictionsError}
                     </div>
                   ) : reviewPredictions.length === 0 ? (
                     <div className="rounded-lg border border-slate-800 bg-slate-950/50 p-4 text-center text-xs text-slate-500">
@@ -671,11 +730,17 @@ function ReviewHistoryContent() {
                           </div>
                           <div className="flex items-center gap-2">
                             <span className="font-mono text-slate-300">
-                              Score: {(pred.fraud_score * 100).toFixed(1)}%
+                              Model risk score: {pred.fraud_score.toFixed(4)}
                             </span>
                             <StatusBadge
-                              status={pred.predicted_label === 1 ? 'High Risk' : 'Normal'}
-                              variant={pred.predicted_label === 1 ? 'error' : 'success'}
+                              status={
+                                pred.predicted_label === 1
+                                  ? "Flagged for review"
+                                  : "Not flagged"
+                              }
+                              variant={
+                                pred.predicted_label === 1 ? "error" : "success"
+                              }
                             />
                           </div>
                         </div>
@@ -697,7 +762,8 @@ function ReviewHistoryContent() {
                   href={`/reviews/submit`}
                   className="inline-flex items-center gap-1.5 rounded-lg bg-indigo-600 px-4 py-2 text-xs font-semibold text-white hover:bg-indigo-500 transition-colors"
                 >
-                  <Zap className="h-3.5 w-3.5" /> Run Inference on Review #{selectedReview.review_id}
+                  <Zap className="h-3.5 w-3.5" /> Run Inference on Review #
+                  {selectedReview.review_id}
                 </Link>
               </div>
             </div>
@@ -709,5 +775,11 @@ function ReviewHistoryContent() {
 }
 
 export default function ReviewHistoryPage() {
-  return <Suspense fallback={<div className="session-loading">Loading review records…</div>}><ReviewHistoryContent/></Suspense>;
+  return (
+    <Suspense
+      fallback={<div className="session-loading">Loading review records…</div>}
+    >
+      <ReviewHistoryContent />
+    </Suspense>
+  );
 }

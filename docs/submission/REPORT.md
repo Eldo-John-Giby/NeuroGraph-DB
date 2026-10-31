@@ -143,7 +143,9 @@ Products and history is an upload/result library rather than an unlabeled raw ca
 
 The upload form selects a compatible historical context. The older known-node multimodal snapshot is intentionally ineligible for new CSV inference because its relation/input contract differs from the final inductive model. Removing the disabled dropdown option improves clarity without weakening that safety boundary. The form validates required columns, UTF-8 format, CSV extension and the backend's 8 MiB and 5,000-row bounds. Backend validation remains authoritative.
 
-The graph initially shows all available relations and reports the number of shown links. Explanations use genuine saved relation attention where provided, rather than assigning a made-up explanation from the risk threshold. The application uses a connected review/evidence logo and matching browser icon. Responsive layouts and accessible labels support desktop and smaller screens.
+Saved results lead with a plain-English summary: scored, flagged, not flagged, accepted-but-unscored and rejected rows are distinct. Search, decision filters, score/CSV-row sorting and pagination make larger uploads inspectable. Opening a review shows its full text, saved cutoff, actual context counts and relation attention; feedback preselects the internal review ID and links back to the batch. The CSV export includes every saved row outcome and escapes spreadsheet formulas. “Not flagged” does not certify authenticity; risk scores are not calibrated fraud probabilities or measured upload accuracy.
+
+The graph initially shows all relation types and counts only links drawn between visible nodes. The model registry is read-only provenance and current inductive-runtime status, with historical checkpoints and scoring jobs separated from benchmark comparisons. The administrator reviewer catalog maps source author identities and opens correctly filtered review records; it provides no account-level fraud classification. Native review dialogs support keyboard focus and Escape.
 
 ![Final model workspace](assets/model-results-live.jpg)
 
@@ -209,7 +211,7 @@ The cloud patch also retained a native database export and the previous backend 
 |---|---|
 | Backend suite with disposable PostgreSQL | 85 passed, 0 failed, 0 skipped |
 | Clean checkout without private bundles | 73 passed; 12 explicit bundle-dependent skips; PostgreSQL tests included |
-| Frontend authentication regressions | 10 passed, 0 failed; rerun 31 October |
+| Frontend authentication and result interpretation | 15 passed, 0 failed; includes missing-score handling, saved-decision counting, filters/order and formula-safe complete export |
 | Matched benchmark scientific contracts | 6 passed; thresholds, sparse gradients, shared labels, metric reproduction and publication identity checked |
 | Responsive comparison interface | Desktop and phone views, seed selection and metric switching verified |
 | Production frontend build | Compiled successfully with type and lint checks |
@@ -227,7 +229,7 @@ The repositories preserve progressive history exceeding ten meaningful commits a
 
 The corrected GitHub Actions workflow tests the actual FastAPI service rather than the archived Express prototype. The verified successful run is https://github.com/Eldo-John-Giby/NeuroGraph-DB/actions/runs/41132134731. Its backend, frontend and container jobs all completed successfully. It runs the API/model-contract suite and real PostgreSQL migrations, Next.js lint/build and authentication tests, and a deployable Docker build. Standard Linux runners execute on the public source repository; hosted jobs skip the private mirror to avoid consuming metered allowances. No workflow embeds cloud credentials or launches an unguarded paid deployment.
 
-The CI pipeline supports the +1 pipeline bonus, subject to faculty evaluation and successful run evidence. Automated regression tests, trigger-based audit logging, verified recovery and measured query-plan evidence support the additional industry-practice +1 category. These practices are not counted as several separate bonus marks.
+The implemented CI pipeline automatically tests and builds code; production release remains an explicit CLI step, not automatic CD. It supports the +1 pipeline bonus as evidence for faculty evaluation. Automated regression tests, trigger-based audit logging, verified recovery and measured query-plan evidence support the additional industry-practice +1 category. These practices are not counted as several separate bonus marks.
 
 The default Vercel and sslip.io addresses are provider hostnames, not a claimed custom-domain bonus. No separately owned or registered custom domain is configured. Docker images are built and deployed, but Docker Hub publication is not claimed because no Docker Hub login is configured. No paid domain or registry subscription was purchased to pursue marks.
 
