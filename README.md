@@ -11,7 +11,7 @@ Access is by an administrator-provisioned account. Demo credentials are shared p
 ## What to try
 
 1. Sign in and open **Model results** for the final model's chronological evaluation.
-2. Open **Upload & analyze**, download the sample CSV, and upload it. The application selects the compatible historical context.
+2. Open **Upload & analyze** and choose a CSV. Native files work directly; other exports use automatic column detection and an in-app mapping preview. The application selects compatible historical context.
 3. Open **Products & history** to revisit saved results without rerunning the model. The result summary separates flagged, not flagged, unscored and rejected rows. Search/filter the rows, open full review text and context, record feedback, or download all results as CSV. Identical file retries recover your prior receipt.
 4. Use **Review feedback** to create, edit or remove a submitted investigation note. An administrator can triage or resolve it. Feedback never overwrites predictions.
 5. Open **Model comparison** for the shared-test results and all historical experiments. Use **Example investigation** for clearly marked synthetic case studies.
@@ -118,6 +118,12 @@ npm run dev
 Open `http://localhost:3000`. API documentation is at `http://localhost:8000/docs`. The frontend proxies `/api/v1` to `BACKEND_URL`, defaulting to localhost:8000.
 
 For verified scoring, obtain the exact bundles identified in `docs/runs`, place them under the documented `artifacts/verified_*` paths, and follow the registration runbooks. The application fails closed when files, hashes, encoder revisions or historical contexts do not match. Database, login and CRUD tests do not require full model downloads.
+
+## Review CSV exports
+
+The upload form recognizes common headers such as `starRating`, `comment`, `createTime`, `authorId` and `placeId`, and accepts comma-, semicolon- or tab-delimited UTF-8 CSV. Unrecognized columns can be mapped in the app without editing the file. Rating words such as `FIVE` are converted to 1–5; ambiguous day/month dates require an explicit format choice. A single-business export without a business column asks for its business/product ID once. Missing review IDs receive stable content-based local IDs. Unidentified authors require confirmation and receive separate local identities, preventing invented same-author links; such batches are marked as having limited author IDs. Native six-column files retain their original bytes and backend row validation.
+
+There is no universal review-export schema. JSON/Excel imports, direct Google account sync, inferred missing ratings/text, and guessed absolute dates from relative strings are not supported. These import conveniences do not establish model accuracy on Google or other new domains.
 
 ## Database features and tests
 

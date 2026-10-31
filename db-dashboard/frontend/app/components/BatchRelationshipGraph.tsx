@@ -52,13 +52,13 @@ export function BatchRelationshipGraph({ batchId }: { batchId: number }) {
           const point = positions.get(node.key)!;
           const pick = () => setSelected(node.key === selected ? null : node.key);
           return <g key={node.key} transform={`translate(${point.x},${point.y})`} onClick={pick} onKeyDown={event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); pick(); } }} role="button" tabIndex={0} aria-label={`Inspect review ${node.review_key}`} style={{cursor:'pointer'}}>
-            <circle r={node.key === selected ? 11 : 8} fill={node.historical ? '#94a3b8' : node.predicted_label === 1 ? '#c46a2c' : '#12685f'} stroke={node.key === selected ? '#1e293b' : '#fff'} strokeWidth={2}/>
+            <circle r={node.key === selected ? 11 : 8} fill={node.historical ? '#94a3b8' : node.predicted_label === 1 ? '#d34c5b' : '#167549'} stroke={node.key === selected ? '#1e293b' : '#fff'} strokeWidth={2}/>
             <text y={-14} textAnchor="middle" fontSize={10} fill="#475569">{node.review_key.slice(-8)}</text>
             <title>{node.review_key} · {node.rating}/5{node.risk_score == null ? ' · historical context' : ` · risk score ${node.risk_score.toFixed(4)}`}</title>
           </g>;
         })}
       </svg>
-      <p className="text-xs text-[#74817b]">Teal: not flagged · Orange: flagged · Gray: stored historical context. Select a review to isolate its links.</p>
+      <p className="text-xs text-[#74817b]">Green: not flagged · Red: flagged · Gray: stored historical context. Select a review to isolate its links.</p>
       {chosen && <p className="text-xs mt-2"><strong>{chosen.review_key}</strong> · {chosen.rating}/5 · {chosen.risk_score == null ? 'Historical context' : `Risk score ${chosen.risk_score.toFixed(4)}`} · {links.length} visible {relation === 'ALL' ? 'context' : relation} links</p>}
       <p className="text-[10px] font-mono break-all mt-3 text-[#74817b]">Verified graph SHA256: {graph.graph_sha256}</p>
     </>}

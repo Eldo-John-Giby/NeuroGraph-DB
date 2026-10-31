@@ -8,7 +8,13 @@ import React, {
   useRef,
 } from "react";
 import Link from "next/link";
-import { RefreshCw } from "lucide-react";
+import {
+  RefreshCw,
+  AlertTriangle,
+  CheckCircle2,
+  Clock3,
+  FileWarning,
+} from "lucide-react";
 import { apiRequest, getErrorMessage } from "../lib/api";
 import {
   resultSummary,
@@ -20,6 +26,7 @@ import { BatchRelationshipGraph } from "./BatchRelationshipGraph";
 export interface BatchAnalysisSummary {
   batch_analysis_id: number;
   batch_key: string;
+  source_system?: string;
   status: string;
   row_count: number;
   accepted_count: number;
@@ -347,46 +354,98 @@ export function InductiveBatchSection({
         <>
           <section
             className="panel result-takeaway"
-            aria-label="Your result in plain English"
+            aria-label="Analysis summary"
           >
-            <p className="eyebrow">Your result, explained</p>
-            <h2>
-              {stats.scored
-                ? `${stats.flagged} of ${stats.scored} scored reviews flagged for human review`
-                : "No model decisions saved yet"}
-            </h2>
-            <p>
-              {stats.scored
-                ? `${stats.notFlagged} ${stats.notFlagged === 1 ? 'scored review was' : 'scored reviews were'} not flagged. ${stats.flagged === 0 ? "No score crossed the saved decision cutoff." : "Start with the flagged reviews below, read the full text, then inspect their connections."}`
-                : "Imported rows and model predictions are separate steps. Check the processing state and any import errors below."}
-            </p>
-            <div className="result-counts">
-              <span>{currentBatch.row_count} submitted</span>
-              <span>{stats.scored} scored</span>
-              <span>{stats.unscored} accepted, unscored</span>
-              <span>{stats.rejected} rejected</span>
+            <div className="result-summary-heading">
+              <div>
+                <p className="eyebrow">Saved results</p>
+                <h2>Analysis summary</h2>
+              </div>
+              <span className="result-sample-count">
+                {stats.scored} / {currentBatch.row_count} scored
+              </span>
             </div>
-            <p className="result-caution">
-              <strong>
-                A flag is not proof of fraud. “Not flagged” is not a guarantee
-                of a genuine review.
-              </strong>{" "}
-              A score is a model signal from 0 to 1, not a calibrated percentage
-              chance. This unlabelled upload has no measured accuracy.
-            </p>
-            {stats.flagged > 0 && (
-              <button
-                className="button-secondary"
-                onClick={() => {
-                  setDecision("flagged");
-                  document
-                    .getElementById("saved-review-list")
-                    ?.scrollIntoView({ behavior: "smooth", block: "start" });
-                }}
+            <div className="result-kpi-grid">
+              {[
+                {
+                  label: "Flagged",
+                  count: stats.flagged,
+                  tone: "flagged",
+                  filter: "flagged",
+                  Icon: AlertTriangle,
+                },
+                {
+                  label: "Not flagged",
+                  count: stats.notFlagged,
+                  tone: "clear",
+                  filter: "cleared",
+                  Icon: CheckCircle2,
+                },
+                {
+                  label: "Unscored",
+                  count: stats.unscored,
+                  tone: "pending",
+                  filter: "unscored",
+                  Icon: Clock3,
+                },
+                {
+                  label: "Import errors",
+                  count: stats.rejected,
+                  tone: "error",
+                  filter: "rejected",
+                  Icon: FileWarning,
+                },
+              ].map(({ label, count, tone, filter, Icon }) => (
+                <button
+                  type="button"
+                  className={`result-kpi result-kpi-${tone}`}
+                  key={filter}
+                  onClick={() => {
+                    setDecision(filter);
+                    document
+                      .getElementById("saved-review-list")
+                      ?.scrollIntoView({ behavior: "smooth", block: "start" });
+                  }}
+                  aria-label={`Show ${count} ${label.toLowerCase()} reviews`}
+                >
+                  <span>
+                    <Icon size={17} aria-hidden="true" />
+                    {label}
+                  </span>
+                  <strong>{count}</strong>
+                </button>
+              ))}
+            </div>
+            {stats.scored > 0 && (
+              <div
+                className="result-split-bar"
+                role="img"
+                aria-label={`${stats.flagged} flagged and ${stats.notFlagged} not flagged out of ${stats.scored} scored`}
               >
-                Inspect flagged reviews
-              </button>
+                <span
+                  className="split-flagged"
+                  style={{ width: `${(stats.flagged / stats.scored) * 100}%` }}
+                />
+                <span
+                  className="split-clear"
+                  style={{
+                    width: `${(stats.notFlagged / stats.scored) * 100}%`,
+                  }}
+                />
+              </div>
             )}
+            <div className="result-summary-footer">
+              <p>
+                Flags need human review. Scores are model signals, not proof of
+                fraud.
+              </p>
+              <span>
+                Cutoff{" "}
+                <strong>
+                  {threshold == null ? "Not assigned" : threshold.toFixed(4)}
+                </strong>
+              </span>
+            </div>
           </section>
           {["running", "queued"].includes(currentBatch.status) && (
             <div className="notice-card" role="status">
@@ -442,10 +501,18 @@ export function InductiveBatchSection({
             </div>
           )}
           <details className="panel result-method">
-            <summary>
-              How to read scores, connections and this run’s settings
-            </summary>
+            <summary>Method & run details</summary>
             <div className="result-method-grid">
+              {currentBatch.source_system?.endsWith("-limited-authors") && (
+                <article>
+                  <h3>Limited author IDs</h3>
+                  <p>
+                    Unidentified authors were imported with separate local
+                    identities. Same-author connections cannot be inferred for
+                    those reviews.
+                  </p>
+                </article>
+              )}
               <article>
                 <h3>Decision cutoff</h3>
                 <p>
@@ -512,24 +579,19 @@ export function InductiveBatchSection({
             <div className="section-heading">
               <div>
                 <p className="eyebrow">Saved row-level decisions</p>
-                <h2>Review your results</h2>
+                <h2>Reviews</h2>
               </div>
               <button
                 className="button-secondary"
                 disabled={!results.length}
                 onClick={exportResults}
               >
-                Download all results CSV
+                Export results
               </button>
             </div>
-            <p>
-              Highest scores appear first. Open a review to read its full text,
-              inspect its recorded context and add human feedback. The download
-              includes all rows, regardless of your filters.
-            </p>
             <div className="analysis-toolbar">
               <label>
-                Search review text or IDs
+                Search reviews
                 <input
                   type="search"
                   value={query}
@@ -544,7 +606,7 @@ export function InductiveBatchSection({
                   onChange={(e) => setDecision(e.target.value)}
                 >
                   <option value="all">All rows</option>
-                  <option value="flagged">Flagged for review</option>
+                  <option value="flagged">Flagged</option>
                   <option value="cleared">Not flagged</option>
                   <option value="rejected">Import errors</option>
                   <option value="unscored">Accepted, unscored</option>
@@ -571,14 +633,21 @@ export function InductiveBatchSection({
                   <tr>
                     <th>Review / CSV row</th>
                     <th>Review text</th>
-                    <th>Model risk score</th>
-                    <th>Saved decision</th>
+                    <th>Risk score</th>
+                    <th>Decision</th>
                     <th>Inspect</th>
                   </tr>
                 </thead>
                 <tbody>
                   {visibleRows.map((row) => (
-                    <tr key={row.row_number}>
+                    <tr
+                      key={row.row_number}
+                      className={
+                        row.prediction?.decision === "flagged"
+                          ? "result-row-flagged"
+                          : ""
+                      }
+                    >
                       <td>
                         <strong className="registry-key">
                           {row.uploaded_review_key || "No source ID"}
@@ -608,21 +677,40 @@ export function InductiveBatchSection({
                         </p>
                       </td>
                       <td>
-                        {row.prediction
-                          ? row.prediction.risk_score.toFixed(4)
-                          : "—"}
+                        <div
+                          className={`result-score ${row.prediction?.decision === "flagged" ? "score-flagged" : row.prediction ? "score-clear" : ""}`}
+                        >
+                          <strong>
+                            {row.prediction
+                              ? row.prediction.risk_score.toFixed(4)
+                              : "—"}
+                          </strong>
+                          {row.prediction && (
+                            <span className="score-track" aria-hidden="true">
+                              <span
+                                style={{
+                                  width: `${Math.min(1, Math.max(0, row.prediction.risk_score)) * 100}%`,
+                                }}
+                              />
+                            </span>
+                          )}
+                        </div>
                       </td>
                       <td>
                         <span
                           className={
                             row.prediction?.decision === "flagged"
                               ? "decision-flagged"
-                              : "decision-neutral"
+                              : row.prediction
+                                ? "decision-clear"
+                                : row.row_state === "rejected"
+                                  ? "decision-error"
+                                  : "decision-pending"
                           }
                         >
                           {row.prediction
                             ? row.prediction.decision === "flagged"
-                              ? "Flagged for review"
+                              ? "Flagged"
                               : "Not flagged"
                             : row.row_state === "rejected"
                               ? "Import error"
@@ -727,10 +815,8 @@ export function InductiveBatchSection({
                     ? ` · run cutoff ${threshold.toFixed(7)}`
                     : ""}
                 </p>
-                <p>
-                  Read the text and context before reaching a conclusion.
-                  Neither the score nor a shared link proves that this review is
-                  fake.
+                <p className="review-detail-note">
+                  Model decision · verify against the review and its context.
                 </p>
                 <h3>Full review text</h3>
                 <p className="full-review-text">
@@ -756,14 +842,14 @@ export function InductiveBatchSection({
                         className="button-primary"
                         href={`/feedback?review_id=${selectedRow.review.review_id}&batch_id=${currentBatch.batch_analysis_id}`}
                       >
-                        Record human feedback
+                        Add feedback
                       </Link>
                       {selectedRow.review.reviewer_id && (
                         <Link
                           className="button-secondary"
                           href={`/reviews?reviewer_id=${selectedRow.review.reviewer_id}`}
                         >
-                          Other visible reviews by this author
+                          Author’s reviews
                         </Link>
                       )}
                     </div>
